@@ -31,12 +31,22 @@ jobs:
                 libreadline-dev libtinfo-dev wget perl \
                 && rm -rf /var/lib/apt/lists/*
 
-              # 克隆 OpenResty 主线源码（包含子模块）
-              git clone https://github.com/openresty/openresty.git /tmp/openresty-src
+              # 获取最新 release 的 tag 名称和源码包下载 URL
+              echo 'Fetching latest OpenResty release from GitHub...'
+              LATEST_RELEASE_JSON=$(curl -s https://api.github.com/repos/openresty/openresty/releases/latest)
+              TAG_NAME=$(echo \"\$LATEST_RELEASE_JSON\" | jq -r .tag_name)
+              # 源码包名称例如 openresty-1.27.1.2.tar.gz
+              SOURCE_TAR=\"openresty-\${TAG_NAME#v}.tar.gz\"
+              DOWNLOAD_URL=\"https://github.com/openresty/openresty/releases/download/\${TAG_NAME}/\${SOURCE_TAR}\"
 
-              cd /tmp/openresty-src
+              # 下载源码包
+              wget -O \"\$SOURCE_TAR\" \"\$DOWNLOAD_URL\"
 
-              ./util/configure \
+              # 解压
+              tar -xzf \"\$SOURCE_TAR\"
+              cd \"openresty-\${TAG_NAME#v}\"
+
+              ./configure \
                 --prefix=/var/apps/OpenResty/var \
                 --sbin-path=/var/apps/OpenResty/target/OpenResty \
                 --conf-path=/var/apps/OpenResty/shares/etc/OpenResty.conf \
@@ -74,7 +84,7 @@ jobs:
 
               # 打包产物
               tar -czf /work/output/openresty-mainline-${{ matrix.arch }}.tar.gz \
-                -C /var/apps/Openresty/target .
+                -C /var/apps/OpenResty .
             "
 
       - name: Upload artifact
