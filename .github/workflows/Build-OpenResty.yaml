@@ -32,8 +32,7 @@ jobs:
                 && rm -rf /var/lib/apt/lists/*
 
               # 克隆 OpenResty 主线源码（包含子模块）
-              git clone --recursive --depth 1 \
-                https://github.com/openresty/openresty.git /tmp/openresty-src
+              git clone https://github.com/openresty/openresty.git /tmp/openresty-src
 
               cd /tmp/openresty-src
 
