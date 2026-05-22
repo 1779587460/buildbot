@@ -44,8 +44,8 @@ jobs:
                 --conf-path=/var/apps/OpenResty/shares/etc/OpenResty.conf \
                 --pid-path=/var/apps/OpenResty/var/openresty.pid \
                 --lock-path=/var/apps/OpenResty/var/openresty.lock \
-                --error-log-path=/var/apps/OpenResty/var/log/error.log
-                --http-log-path=/var/apps/OpenResty/var/log/access.log
+                --error-log-path=/var/apps/OpenResty/var/log/error.log \
+                --http-log-path=/var/apps/OpenResty/var/log/access.log \
                 --http-client-body-temp-path=/var/apps/OpenResty/var/cache/client_temp \
                 --http-proxy-temp-path=/var/apps/OpenResty/var/cache/proxy_temp \
                 --http-fastcgi-temp-path=/var/apps/OpenResty/var/cache/fastcgi_temp \
