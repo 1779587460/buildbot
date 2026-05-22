@@ -31,20 +31,12 @@ jobs:
                 libreadline-dev libtinfo-dev wget perl \
                 && rm -rf /var/lib/apt/lists/*
 
-              # 获取最新 release 的 tag 名称和源码包下载 URL
-              echo 'Fetching latest OpenResty release from GitHub...'
-              LATEST_RELEASE_JSON=$(curl -s https://api.github.com/repos/openresty/openresty/releases/latest)
-              TAG_NAME=$(echo \"\$LATEST_RELEASE_JSON\" | jq -r .tag_name)
-              # 源码包名称例如 openresty-1.27.1.2.tar.gz
-              SOURCE_TAR=\"openresty-\${TAG_NAME#v}.tar.gz\"
-              DOWNLOAD_URL=\"https://github.com/openresty/openresty/releases/download/\${TAG_NAME}/\${SOURCE_TAR}\"
-
               # 下载源码包
-              wget -O \"\$SOURCE_TAR\" \"\$DOWNLOAD_URL\"
+              wget -O openresty-1.27.1.2.tar.gz https://github.com/openresty/openresty/releases/download/v1.27.1.2/openresty-1.27.1.2.tar.gz
 
               # 解压
-              tar -xzf \"\$SOURCE_TAR\"
-              cd \"openresty-\${TAG_NAME#v}\"
+              tar -xzf openresty-1.27.1.2.tar.gz
+              cd openresty-1.27.1.2
 
               ./configure \
                 --prefix=/var/apps/OpenResty/var \
