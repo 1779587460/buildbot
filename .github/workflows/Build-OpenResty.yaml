@@ -1,0 +1,85 @@
+name: Build OpenResty
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    runs-on: ${{ matrix.arch == 'x64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    steps:
+      - name: Create output directory
+        run: mkdir -p output
+
+      - name: Build OpenResty in Debian 12 container
+        run: |
+          docker run --rm \
+            -v "$(pwd):/work" \
+            -w /work \
+            debian:12 \
+            bash -c "
+              set -e
+
+              # 安装依赖
+              apt-get update && apt-get install -y --no-install-recommends \
+                build-essential ca-certificates curl git libpcre3-dev libssl-dev \
+                zlib1g-dev libxml2-dev libxslt1-dev libgd-dev libgeoip-dev \
+                libperl-dev libbz2-dev libexpat1-dev libncurses5-dev \
+                libreadline-dev libtinfo-dev wget perl \
+                && rm -rf /var/lib/apt/lists/*
+
+              # 克隆 OpenResty 主线源码（包含子模块）
+              git clone --recursive --depth 1 \
+                https://github.com/openresty/openresty.git /tmp/openresty-src
+
+              cd /tmp/openresty-src
+
+              ./util/configure \
+                --prefix=/var/apps/OpenResty/var \
+                --sbin-path=/var/apps/OpenResty/target/OpenResty \
+                --conf-path=/var/apps/OpenResty/shares/etc/OpenResty.conf \
+                --pid-path=/var/apps/OpenResty/var/openresty.pid \
+                --lock-path=/var/apps/OpenResty/var/openresty.lock \
+                --error-log-path=/var/apps/OpenResty/var/log/error.log
+                --http-log-path=/var/apps/OpenResty/var/log/access.log
+                --http-client-body-temp-path=/var/apps/OpenResty/var/cache/client_temp \
+                --http-proxy-temp-path=/var/apps/OpenResty/var/cache/proxy_temp \
+                --http-fastcgi-temp-path=/var/apps/OpenResty/var/cache/fastcgi_temp \
+                --http-uwsgi-temp-path=/var/apps/OpenResty/var/cache/uwsgi_temp \
+                --http-scgi-temp-path=/var/apps/OpenResty/var/cache/scgi_temp \
+                --with-luajit \
+                --with-http_ssl_module \
+                --with-http_v2_module \
+                --with-http_v3_module \
+                --with-http_realip_module \
+                --with-http_gzip_static_module \
+                --with-http_stub_status_module \
+                --with-http_sub_module \
+                --with-http_addition_module \
+                --with-http_xslt_module \
+                --with-http_secure_link_module \
+                --with-threads \
+                --with-file-aio \
+                --with-pcre-jit \
+                --with-cc-opt='-O3' \
+                --with-ld-opt='-Wl,-O1,--sort-common,--as-needed' \
+                --with-stream \
+                --with-stream_ssl_module
+
+              # 编译并安装
+              make -j\$(nproc)
+              make install
+
+              # 打包产物
+              tar -czf /work/output/openresty-mainline-${{ matrix.arch }}.tar.gz \
+                -C /var/apps/Openresty/target .
+            "
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: openresty-mainline-${{ matrix.arch }}
+          path: output/openresty-mainline-${{ matrix.arch }}.tar.gz
