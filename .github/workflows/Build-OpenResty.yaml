@@ -19,7 +19,7 @@ jobs:
           docker run --rm \
             -v "$(pwd):/work" \
             -w /work \
-            debian:12 \
+            debian:bookworm \
             bash -c "
               set -e
 
