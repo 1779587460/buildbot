@@ -39,7 +39,7 @@ jobs:
               cd openresty-1.29.2.4
 
               ./configure \
-                --prefix=/var/apps/OMS/server/openresty \
+                --prefix=/var/apps/OMS/target/server/openresty \
                 --with-luajit \
                 --with-http_ssl_module \
                 --with-http_v2_module \
