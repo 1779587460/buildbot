@@ -40,7 +40,7 @@ jobs:
 
               ./configure \
                 --prefix=/var/apps/OpenResty/var \
-                --sbin-path=/var/apps/OpenResty/target/OpenResty \
+                --sbin-path=/var/apps/OpenResty/target/openresty \
                 --conf-path=/var/apps/OpenResty/shares/etc/OpenResty.conf \
                 --pid-path=/var/apps/OpenResty/var/openresty.pid \
                 --lock-path=/var/apps/OpenResty/var/openresty.lock \
