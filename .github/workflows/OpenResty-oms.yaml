@@ -1,0 +1,75 @@
+name: Build OpenResty-oms
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    runs-on: ${{ matrix.arch == 'x64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    steps:
+      - name: Create output directory
+        run: mkdir -p output
+
+      - name: Build OpenResty in Debian 12 container
+        run: |
+          docker run --rm \
+            -v "$(pwd):/work" \
+            -w /work \
+            debian:bookworm \
+            bash -c "
+              set -e
+
+              # 安装依赖
+              apt-get update && apt-get install -y --no-install-recommends \
+                build-essential ca-certificates curl git libpcre3-dev libssl-dev \
+                zlib1g-dev libxml2-dev libxslt1-dev libgd-dev libgeoip-dev \
+                libperl-dev libbz2-dev libexpat1-dev libncurses5-dev \
+                libreadline-dev libtinfo-dev wget perl \
+                && rm -rf /var/lib/apt/lists/*
+
+              # 下载源码包
+              wget -O openresty.tar.gz https://openresty.org/download/openresty-1.29.2.4.tar.gz
+
+              # 解压
+              tar -xzf openresty.tar.gz
+              cd openresty-1.29.2.4
+
+              ./configure \
+                --prefix=/var/apps/OMS/openresty \
+                --with-luajit \
+                --with-http_ssl_module \
+                --with-http_v2_module \
+                --with-http_v3_module \
+                --with-http_realip_module \
+                --with-http_gzip_static_module \
+                --with-http_stub_status_module \
+                --with-http_sub_module \
+                --with-http_addition_module \
+                --with-http_xslt_module \
+                --with-http_secure_link_module \
+                --with-threads \
+                --with-file-aio \
+                --with-pcre-jit \
+                --with-cc-opt='-O3' \
+                --with-ld-opt='-Wl,-O1,--sort-common,--as-needed' \
+                --with-stream \
+                --with-stream_ssl_module
+
+              # 编译并安装
+              make -j\$(nproc)
+              make install
+
+              # 打包产物
+              tar -czf /work/output/openresty-mainline-${{ matrix.arch }}.tar.gz \
+                -C /var/apps/OMS/openresty .
+            "
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: openresty-mainline-${{ matrix.arch }}
+          path: output/openresty-mainline-${{ matrix.arch }}.tar.gz
