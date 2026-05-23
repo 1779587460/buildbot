@@ -65,7 +65,7 @@ jobs:
 
               # 打包产物
               tar -czf /work/output/openresty-mainline-${{ matrix.arch }}.tar.gz \
-                -C /var/apps/OMS/openresty .
+                -C /var/apps/OMS/server/openresty .
             "
 
       - name: Upload artifact
