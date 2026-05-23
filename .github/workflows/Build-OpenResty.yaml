@@ -32,11 +32,11 @@ jobs:
                 && rm -rf /var/lib/apt/lists/*
 
               # 下载源码包
-              wget -O openresty-1.27.1.2.tar.gz https://github.com/openresty/openresty/releases/download/v1.27.1.2/openresty-1.27.1.2.tar.gz
+              wget -O openresty.tar.gz https://openresty.org/download/openresty-1.29.2.4.tar.gz
 
               # 解压
-              tar -xzf openresty-1.27.1.2.tar.gz
-              cd openresty-1.27.1.2
+              tar -xzf openresty.tar.gz
+              cd openresty-1.29.2.4
 
               ./configure \
                 --prefix=/var/apps/OpenResty/var \
