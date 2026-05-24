@@ -1,11 +1,6 @@
 #!/bin/bash
-#--- 初始化数据库及配置 ---
-FB_ADMIN="$fb_admin"
-FB_PASSWORD="$fb_password"
-FB_PORT="$fb_port"
-FB_ROOT="."
 LOG_FILE="${TRIM_PKGVAR}/info.log"
-DB_FILE="${TRIM_PKGHOME}/filebrowser.db"
+DB_FILE="${TRIM_PKGVAR}/filebrowser.db"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
@@ -15,21 +10,21 @@ if [ -f "$DB_FILE" ]; then
     log_msg "数据库文件 $DB_FILE 已存在，跳过初始化。"
 else
     log_msg "未检测到数据库文件，开始初始化..."
-    ${TRIM_APPDEST}/server/filebrowser -d ${DB_FILE} config init
+    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config init
     if [ $? -ne 0 ]; then
-        log_msg "错误: 数据库初始化失败！"
+        echo "错误: 数据库初始化失败！" > ${TRIM_TEMP_LOGFILE}
         exit 1
     fi
     
-    ${TRIM_APPDEST}/server/filebrowser -d ${DB_FILE} config set -a 0.0.0.0 -p $FB_PORT -r $FB_ROOT --locale zh-cn
+    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set --locale zh-cn
     if [ $? -ne 0 ]; then
-        log_msg "错误: 配置设置失败！"
+        echo "错误: 配置设置失败！" > ${TRIM_TEMP_LOGFILE}
         exit 1
     fi
     
-    ${TRIM_APPDEST}/server/filebrowser -d ${DB_FILE} users add $FB_ADMIN $FB_PASSWORD --perm.admin
+    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} users add $fb_admin $fb_password --perm.admin
     if [ $? -ne 0 ]; then
-        log_msg "错误: 用户创建失败！"
+        echo "错误: 用户创建失败！" > ${TRIM_TEMP_LOGFILE}
         exit 1
     fi
     
