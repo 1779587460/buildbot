@@ -1,13 +1,13 @@
 #!/bin/bash
 export PATH=/usr/bin:$PATH
 export LD_LIBRARY_PATH="${TRIM_APPDEST}/lib"
+export ND_ADDRESS="unix:${TRIM_APPDEST}/app.sock"
+export ND_UNIX_SOCKET_PERM=0666
 LOG_FILE="${TRIM_PKGVAR}/info.log"
 PID_FILE="${TRIM_PKGVAR}/app.pid"
-UI_PORT="$ui_port"
 CONFIG_FILE="${TRIM_PKGVAR}/navidrome.toml"
 
-
-CMD="${TRIM_APPDEST}/bin/navidrome --port ${UI_PORT} --configfile=${CONFIG_FILE}"
+CMD="${TRIM_APPDEST}/bin/navidrome --configfile=${CONFIG_FILE}"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
