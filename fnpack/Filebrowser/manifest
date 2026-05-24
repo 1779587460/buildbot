@@ -1,7 +1,7 @@
 appname=Filebrowser
 version=${VERSION}
 display_name=Filebrowser
-desc="""<p>📂文件浏览器可以方便地上传、删除、预览和编辑飞牛所有文件，root运行，注意数据安全。</p><p>⭐使用说明：反代使用路径"unix:///var/apps/Filebrowser/target/app.sock"</p>"""
+desc="""<p>📂文件浏览器可以方便地上传、删除、预览和编辑飞牛所有文件，root运行，注意数据安全。</p><p>⭐使用说明：反代使用飞牛统一网关路径"http(s)://fn地址/app/Filebrowser"或套接字"unix:/var/apps/Filebrowser/target/app.sock"</p>"""
 platform=${PLATFORM}
 source=thirdparty
 maintainer=filebrowser
