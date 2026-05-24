@@ -1,9 +1,4 @@
 #!/bin/bash
-CONFIG_TEMPLATE="${TRIM_APPDEST}/template/navidrome.tpl"
-CONFIG_FILE="${TRIM_PKGVAR}/navidrome.toml"
-
-sed \
-  -e "s|\${MUSIC_DIR}|$music_dir|g" \
-  "$CONFIG_TEMPLATE" > "$CONFIG_FILE"
+cp -r ${TRIM_APPDEST}/template/navidrome.tpl ${TRIM_PKGVAR}/navidrome.toml
 
 exit 0
