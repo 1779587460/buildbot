@@ -1,7 +1,7 @@
 appname=Navidrome
 version=${VERSION}
 display_name=Navidrome
-desc="""<p>🎶Navidrome是一个基于Web的开源音乐收集服务器和流媒体。 它使您可以自由地从任何浏览器或移动设备收听音乐收藏。</p><p>💡添加外部音乐目录需要设置对应目录的读权限</p>"""
+desc="""<p>🎶Navidrome是一个基于Web的开源音乐收集服务器和流媒体。 它使您可以自由地从任何浏览器或移动设备收听音乐收藏。</p><p>💡使用说明：添加外部音乐目录需要设置对应目录的读权限。反代使用飞牛统一网关路径"http(s)://fn地址/app/Navidrome"或套接字"unix:/var/apps/Navidrome/target/app.sock"</p>"""
 platform=${PLATFORM}
 source=thirdparty
 maintainer=navidrome
