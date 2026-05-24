@@ -97,8 +97,8 @@ jobs:
       - name: 将二进制复制到 app/server 目录
         run: |
           APP_DIR="build_workspace/${{ steps.set_vars.outputs.app_name }}/app"
-          mkdir -p "$APP_DIR/server"
-          cp "${{ steps.set_vars.outputs.binary_name }}" "$APP_DIR/server/"
+          mkdir -p "$APP_DIR/bin"
+          cp "${{ steps.set_vars.outputs.binary_name }}" "$APP_DIR/bin/"
       # =====================================
 
       - name: 修改 manifest 文件
