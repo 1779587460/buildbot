@@ -1,32 +1,27 @@
 #!/bin/bash
 LOG_FILE="${TRIM_PKGVAR}/info.log"
+DB_FILE="${TRIM_PKGVAR}/filebrowser.db"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
 }
 
-FB_ADMIN="$fb_admin"
-FB_PASSWORD="$fb_password"
-FB_PORT="$fb_port"
-FB_ROOT="."
-DB_FILE="${TRIM_PKGHOME}/filebrowser.db"
-
 rm -f "${DB_FILE}"
 log_msg "清除旧数据库"
 
-${TRIM_APPDEST}/server/filebrowser -d ${DB_FILE} config init
+${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config init
 if [ $? -ne 0 ]; then
     log_msg "错误: 数据库初始化失败！"
     exit 1
 fi
     
-${TRIM_APPDEST}/server/filebrowser -d ${DB_FILE} config set -a 0.0.0.0 -p $FB_PORT -r $FB_ROOT --locale zh-cn
+${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set --locale zh-cn
 if [ $? -ne 0 ]; then
     log_msg "错误: 配置设置失败！"
     exit 1
 fi
     
-${TRIM_APPDEST}/server/filebrowser -d ${DB_FILE} users add $FB_ADMIN $FB_PASSWORD --perm.admin
+${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} users add $fb_admin $fb_password --perm.admin
 if [ $? -ne 0 ]; then
     log_msg "错误: 用户创建失败！"
     exit 1
