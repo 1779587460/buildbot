@@ -7,7 +7,7 @@ FFmpegPath = "/usr/bin/ffmpeg"
 DefaultLanguage = "zh-Hans"
 
 # Folder where your music library is stored. Can be read-only
-MusicFolder = "${MUSIC_DIR}"
+MusicFolder = "/var/apps/Navidrome/shares/music"
 
 # Folder to store application data (DB, cache...)
 DataFolder= "/var/apps/Navidrome/var"
@@ -40,7 +40,7 @@ EnableTranscodingConfig = true
 # PlaylistsPath = ".:**/**" # (meaning MusicFolder and all its subfolders)"
 
 # Base URL (only the path part) to configure Navidrome behind a proxy (ex: /music)
-# BaseUrl = ""
+BaseUrl = "/app/Navidrome"
 
 # Change background image used in the Login page
 # UILoginBackgroundUrl = "random music image from Unsplash.com"
