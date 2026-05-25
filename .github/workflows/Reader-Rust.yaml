@@ -46,18 +46,18 @@ jobs:
         run: |
           docker pull givenge/reader-rust:latest
 
-      - name: 从镜像中提取 /app/reader-rust 和 /app/frontend 目录
+      - name: 从镜像中提取 /app/reader-rust 和 /app/web 目录
         run: |
           CONTAINER_ID=$(docker create givenge/reader-rust:latest)
           mkdir -p extracted
           # 提取主程序文件
           docker cp "$CONTAINER_ID":/app/reader-rust extracted/
           # 提取 web 目录
-          docker cp "$CONTAINER_ID":/app/frontend extracted/
+          docker cp "$CONTAINER_ID":/app/web extracted/
           docker rm "$CONTAINER_ID"
           echo "提取完成，extracted 目录结构："
           ls -la extracted/
-          ls -la extracted/reader-rust extracted/frontend || true
+          ls -la extracted/reader-rust extracted/web || true
 
       - name: 检出 buildbot 仓库
         uses: actions/checkout@v6
@@ -82,7 +82,7 @@ jobs:
           APP_DIR="build_workspace/${{ steps.set_vars.outputs.app_name }}/app"
           mkdir -p "$APP_DIR"
           cp extracted/reader-rust "$APP_DIR/"
-          cp -r extracted/frontend "$APP_DIR/"
+          cp -r extracted/web "$APP_DIR/"
           chmod +x "$APP_DIR/reader-rust"
           echo "复制完成，app 目录内容："
           ls -la "$APP_DIR"
