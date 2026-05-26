@@ -40,7 +40,7 @@ EnableTranscodingConfig = true
 # PlaylistsPath = ".:**/**" # (meaning MusicFolder and all its subfolders)"
 
 # Base URL (only the path part) to configure Navidrome behind a proxy (ex: /music)
-BaseUrl = "/app/Navidrome"
+# BaseUrl = "/app/Navidrome"
 
 # Change background image used in the Login page
 # UILoginBackgroundUrl = "random music image from Unsplash.com"
