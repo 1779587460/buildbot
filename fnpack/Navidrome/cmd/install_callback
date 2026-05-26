@@ -1,4 +1,4 @@
 #!/bin/bash
-cp -r ${TRIM_APPDEST}/template/navidrome.tpl ${TRIM_PKGVAR}/navidrome.toml
+# cp -r ${TRIM_APPDEST}/template/navidrome.tpl ${TRIM_PKGVAR}/navidrome.toml
 
 exit 0
