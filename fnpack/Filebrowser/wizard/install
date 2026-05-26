@@ -3,16 +3,43 @@
     "stepTitle": "初始化配置",
     "items": [
       {
+        "type": "select",
+        "field": "auth_mode",
+        "label": "访问方式",
+        "rules": [],
+        "options": [
+          {
+            "label": "飞牛网关+自动认证",
+            "value": "0"
+          },
+          {
+            "label": "飞牛网关+密码登录",
+            "value": "1"
+          },
+          {
+            "label": "端口访问+密码登录",
+            "value": "2"
+          }
+        ],
+        "helpText": "自动认证由飞牛统一网关代理鉴权并传递认证头；端口访问时飞牛入口将失效，可添加自定义反代url外网使用",
+        "initValue": "0"
+      },
+      {
+        "type": "text",
+        "field": "port",
+        "label": "端口",
+        "rules": [],
+        "options": [],
+        "helpText": "网关模式无需添加",
+        "initValue": ""
+      },
+      {
         "type": "text",
         "field": "fb_admin",
         "label": "用户名",
-        "rules": [
-          {
-            "required": true,
-            "message": "请输入用户名"
-          }
-        ],
+        "rules": [],
         "options": [],
+        "helpText": "自动认证无需添加",
         "initValue": ""
       },
       {
@@ -21,17 +48,13 @@
         "label": "密码",
         "rules": [
           {
-            "required": true,
-            "message": "请输入密码"
-          },
-          {
             "min": 12,
             "max": 72,
             "message": "密码不小于12位"
           }
         ],
         "options": [],
-        "helpText": "密码包含数字、字母、标点中的任意两种，不包含特殊字符",
+        "helpText": "自动认证无需添加",
         "initValue": ""
       }
     ]
