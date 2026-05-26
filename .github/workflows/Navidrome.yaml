@@ -51,12 +51,15 @@ jobs:
           if [ "${{ matrix.os }}" = "ubuntu-24.04" ]; then
             ARCH="amd64"
             PLATFORM="x86"
+            MINOS="1.1.31"
           else
             ARCH="arm64"
             PLATFORM="arm"
+            MINOS="1.1.3105"
           fi
           echo "arch=$ARCH" >> $GITHUB_OUTPUT
           echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
+          echo "minos=$MINOS" >> $GITHUB_OUTPUT
 
       - name: 下载并解压 Navidrome 二进制包
         run: |
@@ -110,6 +113,7 @@ jobs:
           sed -i "s/\${VERSION}/$MANIFEST_VERSION/g" "$MANIFEST_PATH"
           sed -i "s/\${CHANGELOG}/$ESCAPED_CHANGELOG/g" "$MANIFEST_PATH"
           sed -i "s/\${PLATFORM}/${{ steps.arch.outputs.platform }}/g" "$MANIFEST_PATH"
+          sed -i "s/\${MINOS}/${{ steps.arch.outputs.minos }}/g" "$MANIFEST_PATH"
           echo "manifest 修改后的内容："
           cat "$MANIFEST_PATH"
 
