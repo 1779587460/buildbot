@@ -2,7 +2,7 @@
 LOG_FILE="${TRIM_PKGVAR}/info.log"
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 
-CMD="${TRIM_APPDEST}/bin/filebrowser --socket ${TRIM_APPDEST}/app.sock --socketPerm 0660 --baseURL "/app/Filebrowser" -d ${TRIM_PKGVAR}/filebrowser.db"
+CMD="${TRIM_APPDEST}/bin/filebrowser -d ${TRIM_PKGVAR}/filebrowser.db --socketPerm 0660"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
