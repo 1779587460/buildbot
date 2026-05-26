@@ -15,16 +15,30 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
     
-${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set --locale zh-cn
-if [ $? -ne 0 ]; then
-    log_msg "错误: 配置设置失败！"
-    exit 1
-fi
-    
-${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} users add $fb_admin $fb_password --perm.admin
-if [ $? -ne 0 ]; then
-    log_msg "错误: 用户创建失败！"
-    exit 1
+if [ "$auth_mode" = "0" ]; then
+    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set --socket ${TRIM_APPDEST}/app.sock --baseURL /app/Filebrowser --locale zh-cn
+    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set --auth.method=proxy --auth.header=X-Trim-Username --perm.admin
+elif [ "$auth_mode" = "1" ]; then
+    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set --socket ${TRIM_APPDEST}/app.sock --baseURL /app/Filebrowser --locale zh-cn
+    if [ -n "$fb_admin" ] && [ -n "$fb_password" ]; then
+        ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} users add $fb_admin $fb_password --perm.admin
+    else
+        log_msg "密码登录需添加用户名和密码"
+        exit 1
+    fi
+else
+    if [ -n "$port" ]; then
+        ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set -a 0.0.0.0 -p $port --locale zh-cn
+    else
+        log_msg "端口访问需添加监听端口"
+        exit 1
+    fi
+    if [ -n "$fb_admin" ] && [ -n "$fb_password" ]; then
+        ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} users add $fb_admin $fb_password --perm.admin
+    else
+        log_msg "密码登录需添加用户名和密码"
+        exit 1
+    fi
 fi
     
 log_msg "数据库已成功重置"
