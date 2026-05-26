@@ -7,28 +7,48 @@ log_msg() {
 }
 
 if [ -f "$DB_FILE" ]; then
-    log_msg "数据库文件 $DB_FILE 已存在，跳过初始化。"
+    rm -f "${DB_FILE}"
+    log_msg "清除旧数据库，开始初始化..."
 else
     log_msg "未检测到数据库文件，开始初始化..."
-    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config init
-    if [ $? -ne 0 ]; then
-        echo "错误: 数据库初始化失败！" > ${TRIM_TEMP_LOGFILE}
-        exit 1
-    fi
-    
-    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set --locale zh-cn
-    if [ $? -ne 0 ]; then
-        echo "错误: 配置设置失败！" > ${TRIM_TEMP_LOGFILE}
-        exit 1
-    fi
-    
-    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} users add $fb_admin $fb_password --perm.admin
-    if [ $? -ne 0 ]; then
-        echo "错误: 用户创建失败！" > ${TRIM_TEMP_LOGFILE}
-        exit 1
-    fi
-    
-    log_msg "数据库已成功初始化并完成配置"
 fi
+
+${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config init
+if [ $? -ne 0 ]; then
+    echo "错误: 数据库初始化失败！" > ${TRIM_TEMP_LOGFILE}
+    exit 1
+fi
+
+if [ "$auth_mode" = "0" ]; then
+    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set --socket ${TRIM_APPDEST}/app.sock --baseURL /app/Filebrowser --locale zh-cn
+    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set --auth.method=proxy --auth.header=X-Trim-Username --perm.admin
+elif [ "$auth_mode" = "1" ]; then
+    ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set --socket ${TRIM_APPDEST}/app.sock --baseURL /app/Filebrowser --locale zh-cn
+    if [ -n "$fb_admin" ] && [ -n "$fb_password" ]; then
+        ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} users add $fb_admin $fb_password --perm.admin
+    else
+        echo "密码登录需添加用户名和密码" > ${TRIM_TEMP_LOGFILE}
+        exit 1
+    fi
+else
+    if [ -n "$port" ]; then
+        ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} config set -a 0.0.0.0 -p $port --locale zh-cn
+    else
+        echo "端口访问需添加监听端口" > ${TRIM_TEMP_LOGFILE}
+        exit 1
+    fi
+    if [ -n "$fb_admin" ] && [ -n "$fb_password" ]; then
+        ${TRIM_APPDEST}/bin/filebrowser -d ${DB_FILE} users add $fb_admin $fb_password --perm.admin
+    else
+        echo "密码登录需添加用户名和密码" > ${TRIM_TEMP_LOGFILE}
+        exit 1
+    fi
+fi
+if [ $? -ne 0 ]; then
+    echo "错误: 配置设置失败！" > ${TRIM_TEMP_LOGFILE}
+    exit 1
+fi
+    
+log_msg "数据库已成功初始化并完成配置"
 
 exit 0
