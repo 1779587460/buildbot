@@ -1,0 +1,34 @@
+[
+  {
+    "stepTitle": "欢迎使用",
+    "items": [
+      {
+        "type": "select",
+        "field": "auth_mode",
+        "label": "访问方式",
+        "rules": [],
+        "options": [
+          {
+            "label": "网关模式",
+            "value": "0"
+          },
+          {
+            "label": "端口模式",
+            "value": "1"
+          }
+        ],
+        "helpText": "飞牛网关可代理鉴权自动登录",
+        "initValue": "0"
+      },
+      {
+        "type": "text",
+        "field": "port",
+        "label": "端口",
+        "rules": [],
+        "options": [],
+        "helpText": "端口模式端口",
+        "initValue": "4533"
+      }
+    ]
+  }
+]
