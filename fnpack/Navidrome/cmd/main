@@ -1,7 +1,12 @@
 #!/bin/bash
 export PATH=/usr/bin:$PATH
 export LD_LIBRARY_PATH="${TRIM_APPDEST}/lib"
-export ND_CONFIGFILE="${TRIM_PKGVAR}/navidrome.toml"
+# export ND_CONFIGFILE="${TRIM_PKGVAR}/navidrome.toml"
+export ND_DEFAULTLANGUAGE="zh-Hans"
+export ND_DATAFOLDER="${TRIM_PKGVAR}"
+export ND_MUSICFOLDER="/var/apps/Navidrome/shares/music"
+export ND_ENABLETRANSCODINGCANCELLATION="true"
+export ND_FFMPEGPATH="/usr/bin/ffmpeg"
 
 if [ "$auth_mode" = "0" ]; then
     export ND_ADDRESS="unix:${TRIM_APPDEST}/app.sock"
