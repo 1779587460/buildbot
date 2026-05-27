@@ -1,4 +1,8 @@
 #!/bin/bash
+if [ ! -f "${TRIM_DATA_SHARE_PATHS%%:*}/navidrome.toml" ]; then
+    cp ${TRIM_APPDEST}/template/navidrome.toml ${TRIM_DATA_SHARE_PATHS%%:*}/navidrome.toml
+fi
 
+cp -f ${TRIM_APPDEST}/template/nd-lyrics.ndp ${TRIM_DATA_SHARE_PATHS%%:*}/plugins/nd-lyrics.ndp
 
 exit 0
