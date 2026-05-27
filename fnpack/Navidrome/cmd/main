@@ -1,7 +1,11 @@
 #!/bin/bash
 export PATH=/usr/bin:$PATH
-export LD_LIBRARY_PATH="${TRIM_APPDEST}/lib"
+export ND_CONFIGFILE="${TRIM_DATA_SHARE_PATHS%%:*}/navidrome.toml"
 export ND_HTTPHEADERS_FRAMEOPTIONS="SAMEORIGIN"
+export ND_LOGFILE="${TRIM_DATA_SHARE_PATHS%%:*}/navidrome.log"
+export ND_LOGLEVEL="$log_level"
+export ND_ENABLETRANSCODINGCONFIG="$trcode"
+export ND_PLUGINS_FOLDER="${TRIM_DATA_SHARE_PATHS%%:*}/plugins"
 export ND_DEFAULTLANGUAGE="zh-Hans"
 export ND_DATAFOLDER="${TRIM_PKGVAR}"
 export ND_MUSICFOLDER="/var/apps/Navidrome/shares/music"
@@ -18,7 +22,7 @@ else
     export ND_PORT="$port"
 fi
   
-LOG_FILE="${TRIM_PKGVAR}/info.log"
+LOG_FILE="${TRIM_DATA_SHARE_PATHS%%:*}/info.log"
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 
 
