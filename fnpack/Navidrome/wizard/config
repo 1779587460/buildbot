@@ -28,6 +28,62 @@
         "options": [],
         "helpText": "端口模式端口",
         "initValue": "4533"
+      },
+      {
+        "type": "tips",
+        "field": "wizard_default",
+        "label": "示例项",
+        "rules": [],
+        "options": [],
+        "helpText": "调试设置，遇到无法解决的播放、转码故障可开启进行调试"
+      },
+      {
+        "type": "select",
+        "field": "trcode",
+        "label": "转码配置修改",
+        "rules": [],
+        "options": [
+          {
+            "label": "关闭",
+            "value": "false"
+          },
+          {
+            "label": "开启",
+            "value": "true"
+          }
+        ],
+        "helpText": "确有修改需要再开启",
+        "initValue": "false"
+      },
+      {
+        "type": "select",
+        "field": "log_level",
+        "label": "日志等级",
+        "rules": [],
+        "options": [
+          {
+            "label": "tace",
+            "value": "0"
+          },
+          {
+            "label": "debug",
+            "value": "1"
+          },
+          {
+            "label": "info",
+            "value": "2"
+          },
+          {
+            "label": "warn",
+            "value": "3"
+          },
+          {
+            "label": "error",
+            "value": "4"
+          }
+        ],
+        "helpText": "调试模式可开启debug",
+        "initValue": "2"
       }
     ]
   }
