@@ -9,7 +9,6 @@ export ND_PLUGINS_FOLDER="${TRIM_DATA_SHARE_PATHS%%:*}/plugins"
 export ND_DEFAULTLANGUAGE="zh-Hans"
 export ND_DATAFOLDER="${TRIM_PKGVAR}"
 export ND_MUSICFOLDER="/var/apps/Navidrome/shares/music"
-export ND_ENABLETRANSCODINGCANCELLATION="true"
 export ND_FFMPEGPATH="/usr/bin/ffmpeg"
 
 if [ "$auth_mode" = "0" ]; then
