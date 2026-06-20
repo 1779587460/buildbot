@@ -76,6 +76,7 @@ proxy-groups:
   - {name: 📋 Trackerslist, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
   - {name: 🎮 游戏服务, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
   - {name: 🪟 微软服务, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
+  - {name: 📲 电报消息, type: select, proxies: [🚀 节点选择, 🎯 全球直连]}
   - {name: 🇬 谷歌服务, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
   - {name: 🍎 苹果服务, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
   - {name: 📺 哔哩哔哩, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
@@ -351,5 +352,5 @@ rules:
   - RULE-SET,cnip,🀄️ 直连 IP
   - RULE-SET,netflixip,🚀 节点选择
   - RULE-SET,mediaip,🚀 节点选择
-  - RULE-SET,telegramip,🚀 节点选择,no-resolve
+  - RULE-SET,telegramip,📲 电报消息,no-resolve
   - MATCH,🚀 节点选择
