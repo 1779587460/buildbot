@@ -161,48 +161,46 @@ jobs:
             rm mihomo.gz
           done
 
-      - name: 下载规则集文件到 app_tmp/ruleset
+            - name: 下载规则集文件到 app_tmp/ruleset
         run: |
           APP_DIR="build_workspace/${{ steps.set_vars.outputs.app_name }}/app"
           RULESET_DIR="$APP_DIR/app_tmp/ruleset"
-          # 定义所有需要下载的文件列表（每行一个）
-          cat << 'EOF' | while read -r file; do
-            fakeip-filter.mrs
-            ads.mrs
-            private.mrs
-            trackerslist.mrs
-            applications.list
-            microsoft-cn.mrs
-            apple-cn.mrs
-            google-cn.mrs
-            games-cn.mrs
-            games.mrs
-            netflix.mrs
-            disney.mrs
-            max.mrs
-            primevideo.mrs
-            appletv.mrs
-            youtube.mrs
-            tiktok.mrs
-            bilibili.mrs
-            spotify.mrs
-            media.mrs
-            ai.mrs
-            networktest.mrs
-            tld-proxy.mrs
-            gfw.mrs
-            proxy.mrs
-            cn.mrs
-            privateip.mrs
-            cnip.mrs
-            telegramip.mrs
-            netflixip.mrs
-            mediaip.mrs
-          EOF
-          do
+          while read -r file; do
             wget -O "$RULESET_DIR/$file" \
               "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/$file"
-          done
+          done << 'EOF'
+fakeip-filter.mrs
+ads.mrs
+private.mrs
+trackerslist.mrs
+applications.list
+microsoft-cn.mrs
+apple-cn.mrs
+google-cn.mrs
+games-cn.mrs
+games.mrs
+netflix.mrs
+disney.mrs
+max.mrs
+primevideo.mrs
+appletv.mrs
+youtube.mrs
+tiktok.mrs
+bilibili.mrs
+spotify.mrs
+media.mrs
+ai.mrs
+networktest.mrs
+tld-proxy.mrs
+gfw.mrs
+proxy.mrs
+cn.mrs
+privateip.mrs
+cnip.mrs
+telegramip.mrs
+netflixip.mrs
+mediaip.mrs
+EOF
 
       - name: 修改 manifest 文件
         run: |
