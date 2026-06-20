@@ -1,0 +1,20 @@
+{
+  ".url": {
+    "Fluxor.Application": {
+      "noDisplay": false,
+      "allUsers": false,
+      "fileTypes": [],
+      "control": {
+        "accessPerm": "editable"
+      },
+      "protocol": "http",
+      "gatewayPrefix": "/app/Fluxor",
+      "gatewaySocket": "app.sock",
+      "title": "Fluxor",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "port": "",
+      "url": "/app/Fluxor"
+    }
+  }
+}

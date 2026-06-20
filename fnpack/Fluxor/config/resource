@@ -1,0 +1,38 @@
+{
+  "data-share": {
+    "shares": [
+      {
+        "name": "Fluxor",
+        "permission": {
+          "rw": [
+            "Fluxor"
+          ]
+        }
+      },
+      {
+        "name": "Fluxor/ui",
+        "permission": {
+          "rw": [
+            "Fluxor"
+          ]
+        }
+      },
+      {
+        "name": "Fluxor/ruleset",
+        "permission": {
+          "rw": [
+            "Fluxor"
+          ]
+        }
+      },
+      {
+        "name": "Fluxor/proxies",
+        "permission": {
+          "rw": [
+            "Fluxor"
+          ]
+        }
+      }
+    ]
+  }
+}

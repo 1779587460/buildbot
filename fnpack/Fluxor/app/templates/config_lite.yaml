@@ -1,0 +1,91 @@
+mixed-port: ${PROXY_PORT}
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: silent
+external-controller: '0.0.0.0:${UI_PORT}'
+external-controller-unix: '/var/apps/Fluxor/target/core.sock'
+external-ui: ${UI_SELECT}
+secret: '${UI_PASSWORD}'
+${UI_URL}
+
+find-process-mode: strict
+client-fingerprint: chrome
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  skip-domain:
+    - "+.push.apple.com"
+
+tun:
+  enable: false
+  stack: mixed
+  dns-hijack:
+    - "any:53"
+    - "tcp://any:53"
+  auto-route: true
+  auto-redirect: true
+  auto-detect-interface: true
+
+proxy-providers:
+${PROXY_PROVIDERS}
+
+geodata-mode: true
+geo-auto-update: true
+geo-update-interval: 24
+
+dns:
+  enable: true
+  prefer-h3: true
+  ipv6: true
+  default-nameserver:
+    - https://223.5.5.5/dns-query
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+    "geosite:geolocation-!cn":
+      - "https://dns.cloudflare.com/dns-query"
+      - "https://dns.google/dns-query"
+  nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+  proxy-server-nameserver:
+    - https://doh.pub/dns-query 
+
+proxy-groups:
+  - {name: 🚀 节点选择, type: select, proxies: [👉 手动选择,♻️ 自动选择]}
+  - {name: 👉 手动选择, type: select, include-all: true}
+  - {name: ♻️ 自动选择, type: url-test, include-all: true, tolerance: 100}
+  - {name: 🤖 Github, type: select, proxies:  [🚀 节点选择,🎯 全球直连]}
+  - {name: 🇨🇳 国内, type: select, proxies:  [🎯 全球直连,🚀 节点选择]}
+  - {name: 🧱 国外, type: select, proxies:  [🚀 节点选择,🎯 全球直连]}
+  - {name: 🎯 全球直连, type: select, proxies: [DIRECT], hidden: true}
+
+rules:
+  - GEOIP,lan,🎯 全球直连,no-resolve
+  - GEOSITE,github,🤖 Github
+  - GEOSITE,google,🚀 节点选择
+  - GEOSITE,telegram,🚀 节点选择
+  - GEOSITE,CN,🇨🇳 国内
+  - GEOSITE,geolocation-!cn,🧱 国外
+  - GEOIP,google,🚀 节点选择
+  - GEOIP,telegram,🚀 节点选择
+  - GEOIP,CN,🇨🇳 国内
+  - MATCH,🧱 国外

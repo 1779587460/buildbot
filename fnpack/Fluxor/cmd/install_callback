@@ -1,0 +1,54 @@
+#!/bin/bash
+
+RULESET_DIR="${TRIM_DATA_SHARE_PATHS%%:*}/ruleset"
+LOG_FILE="${TRIM_DATA_SHARE_PATHS%%:*}/info.log"
+APP_TMP="${TRIM_APPDEST}/app_tmp"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
+}
+
+if [ -d "/var/apps/Fluxor/shares/Fluxor/ui" ]; then
+    rm -rf "/var/apps/Fluxor/shares/Fluxor/ui"
+    mkdir -p /var/apps/Fluxor/shares/Fluxor/ui
+    log_msg="已清除旧面板文件"
+fi
+
+# --- 释放内置库 ---
+cp -rf ${APP_TMP}/ui/* "${TRIM_DATA_SHARE_PATHS%%:*}/ui/"
+cp -rf ${APP_TMP}/geoip/* "${TRIM_DATA_SHARE_PATHS%%:*}/"
+cp -rf ${APP_TMP}/ruleset/* "${RULESET_DIR}/"
+
+
+if [ "${TRIM_OLD_APPVER%%.*}" -lt 2 ]; then
+    rm -f ${TRIM_DATA_SHARE_PATHS%%:*}/config.yaml
+    log_msg "清除旧版config"
+fi
+
+# --- 检测cpu ---
+mkdir -p ${TRIM_APPDEST}/bin
+if [ ${TRIM_SYS_ARCH} = arm ]; then
+    log_msg "ARM: copying mihomo-linux-arm64"
+    cp ${APP_TMP}/bin/mihomo-linux-arm64 ${TRIM_APPDEST}/bin/mihomo
+    cp ${APP_TMP}/bin/fluxor-arm64 ${TRIM_APPDEST}/bin/fluxor
+
+elif [ ${TRIM_SYS_ARCH} = x86 ]; then
+    cp ${APP_TMP}/bin/fluxor-amd64 ${TRIM_APPDEST}/bin/fluxor
+    FLAGS=$(lscpu | grep -E '^(Flags|Features):' | head -n1 | cut -d: -f2- | tr ' ' '\n')
+    if echo "$FLAGS" | grep -q "^avx2$" && echo "$FLAGS" | grep -q "^bmi2$"; then
+        log_msg "x86: copying mihomo-linux-amd64-v3"
+        cp ${APP_TMP}/bin/mihomo-linux-amd64-v3 ${TRIM_APPDEST}/bin/mihomo
+    elif echo "$FLAGS" | grep -q "^sse4_2$" || echo "$FLAGS" | grep -q "^popcnt$"; then
+        log_msg "x86: copying mihomo-linux-amd64-v2"
+        cp ${APP_TMP}/bin/mihomo-linux-amd64-v2 ${TRIM_APPDEST}/bin/mihomo
+    else
+        log_msg "x86: copying mihomo-linux-amd64-v1"
+        cp ${APP_TMP}/bin/mihomo-linux-amd64-v1 ${TRIM_APPDEST}/bin/mihomo
+    fi
+fi
+
+#--- 清除内置库文件夹 ---
+rm -rf ${APP_TMP}
+log_msg "成功释放运行文件"
+
+exit 0

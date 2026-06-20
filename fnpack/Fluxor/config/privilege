@@ -1,0 +1,7 @@
+{
+  "username": "Fluxor",
+  "groupname": "Fluxor",
+  "defaults": {
+    "run-as": "root"
+  }
+}
