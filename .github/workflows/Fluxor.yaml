@@ -161,46 +161,41 @@ jobs:
             rm mihomo.gz
           done
 
-            - name: 下载规则集文件到 app_tmp/ruleset
+      - name: 下载规则集文件到 app_tmp/ruleset
         run: |
           APP_DIR="build_workspace/${{ steps.set_vars.outputs.app_name }}/app"
           RULESET_DIR="$APP_DIR/app_tmp/ruleset"
-          while read -r file; do
-            wget -O "$RULESET_DIR/$file" \
-              "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/$file"
-          done << 'EOF'
-fakeip-filter.mrs
-ads.mrs
-private.mrs
-trackerslist.mrs
-applications.list
-microsoft-cn.mrs
-apple-cn.mrs
-google-cn.mrs
-games-cn.mrs
-games.mrs
-netflix.mrs
-disney.mrs
-max.mrs
-primevideo.mrs
-appletv.mrs
-youtube.mrs
-tiktok.mrs
-bilibili.mrs
-spotify.mrs
-media.mrs
-ai.mrs
-networktest.mrs
-tld-proxy.mrs
-gfw.mrs
-proxy.mrs
-cn.mrs
-privateip.mrs
-cnip.mrs
-telegramip.mrs
-netflixip.mrs
-mediaip.mrs
-EOF
+          wget -O "$RULESET_DIR/fakeip-filter.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/fakeip-filter.mrs"
+          wget -O "$RULESET_DIR/ads.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ads.mrs"
+          wget -O "$RULESET_DIR/private.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/private.mrs"
+          wget -O "$RULESET_DIR/trackerslist.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/trackerslist.mrs"
+          wget -O "$RULESET_DIR/applications.list" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/applications.list"
+          wget -O "$RULESET_DIR/microsoft-cn.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/microsoft-cn.mrs"
+          wget -O "$RULESET_DIR/apple-cn.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/apple-cn.mrs"
+          wget -O "$RULESET_DIR/google-cn.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/google-cn.mrs"
+          wget -O "$RULESET_DIR/games-cn.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games-cn.mrs"
+          wget -O "$RULESET_DIR/games.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/games.mrs"
+          wget -O "$RULESET_DIR/netflix.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/netflix.mrs"
+          wget -O "$RULESET_DIR/disney.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/disney.mrs"
+          wget -O "$RULESET_DIR/max.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/max.mrs"
+          wget -O "$RULESET_DIR/primevideo.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/primevideo.mrs"
+          wget -O "$RULESET_DIR/appletv.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/appletv.mrs"
+          wget -O "$RULESET_DIR/youtube.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/youtube.mrs"
+          wget -O "$RULESET_DIR/tiktok.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/tiktok.mrs"
+          wget -O "$RULESET_DIR/bilibili.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/bilibili.mrs"
+          wget -O "$RULESET_DIR/spotify.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/spotify.mrs"
+          wget -O "$RULESET_DIR/media.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/media.mrs"
+          wget -O "$RULESET_DIR/ai.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/ai.mrs"
+          wget -O "$RULESET_DIR/networktest.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/networktest.mrs"
+          wget -O "$RULESET_DIR/tld-proxy.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/tld-proxy.mrs"
+          wget -O "$RULESET_DIR/gfw.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/gfw.mrs"
+          wget -O "$RULESET_DIR/proxy.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/proxy.mrs"
+          wget -O "$RULESET_DIR/cn.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cn.mrs"
+          wget -O "$RULESET_DIR/privateip.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/privateip.mrs"
+          wget -O "$RULESET_DIR/cnip.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cnip.mrs"
+          wget -O "$RULESET_DIR/telegramip.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/telegramip.mrs"
+          wget -O "$RULESET_DIR/netflixip.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/netflixip.mrs"
+          wget -O "$RULESET_DIR/mediaip.mrs" "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/mediaip.mrs"
 
       - name: 修改 manifest 文件
         run: |
