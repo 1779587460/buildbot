@@ -109,6 +109,10 @@ jobs:
             https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
           wget -O "$APP_DIR/app_tmp/geoip/geoip.dat" \
             https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat
+          wget -O "$APP_DIR/app_tmp/geoip/geoip.metadb" \
+            https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb
+          wget -O "$APP_DIR/app_tmp/geoip/GeoLite2-ASN.mmdb" \
+            https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb
 
       - name: 下载并解压 zashboard (dist-cdn-fonts.zip)
         env:
