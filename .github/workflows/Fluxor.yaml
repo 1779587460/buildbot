@@ -50,20 +50,27 @@ jobs:
           echo "manifest_version=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
           echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
 
-      - name: 安装依赖（Node.js、Go、jq、unzip等）
+      - name: 安装依赖（jq、unzip等）
         run: |
           sudo apt-get update
           sudo apt-get install -y wget curl jq unzip
-          # 安装 Node.js 24
-          curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-          sudo apt-get install -y nodejs
-          # 安装 Go
-          sudo snap install go --classic
 
       - name: 克隆 fluxor 源码
         run: |
           git clone https://github.com/shuangji66/fluxor.git fluxor-src
           ls -la fluxor-src
+
+      - name: 设置 Node.js 环境
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: fluxor-src/web/package-lock.json
+
+      - name: 设置 Go 环境
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
 
       - name: 修改 package.json 版本号（追加 commit 哈希）
         run: |
