@@ -65,6 +65,15 @@ jobs:
           git clone https://github.com/shuangji66/fluxor.git fluxor-src
           ls -la fluxor-src
 
+      - name: 修改 package.json 版本号（追加 commit 哈希）
+        run: |
+          cd fluxor-src
+          HASH=$(git rev-parse --short HEAD)
+          VERSION=$(jq -r '.version' web/package.json)
+          NEW_VERSION="${VERSION}~${HASH}"
+          jq --arg new "$NEW_VERSION" '.version = $new' web/package.json > web/package.json.tmp && mv web/package.json.tmp web/package.json
+          echo "新版本号: $NEW_VERSION"
+
       - name: 构建前端 (web)
         working-directory: ./fluxor-src/web
         run: |
