@@ -42,17 +42,22 @@ jobs:
           echo "manifest_version=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
           echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
 
-      - name: 拉取 givenge/reader-rust:latest 镜像
+      # ========== 改进后的拉取步骤 ==========
+      - name: 拉取对应架构的镜像
         run: |
-          docker pull givenge/reader-rust:latest
+          if [ "${{ matrix.platform }}" = "x86" ]; then
+            IMAGE="givenge/reader-rust:latest"
+          else
+            IMAGE="givenge/reader-rust:latest-aarch64"
+          fi
+          docker pull "$IMAGE"
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
       - name: 从镜像中提取 /app/reader-rust 和 /app/web 目录
         run: |
-          CONTAINER_ID=$(docker create givenge/reader-rust:latest)
+          CONTAINER_ID=$(docker create "$IMAGE")
           mkdir -p extracted
-          # 提取主程序文件
           docker cp "$CONTAINER_ID":/app/reader-rust extracted/
-          # 提取 web 目录
           docker cp "$CONTAINER_ID":/app/web extracted/
           docker rm "$CONTAINER_ID"
           echo "提取完成，extracted 目录结构："
@@ -76,7 +81,6 @@ jobs:
           cp "buildbot_repo/fnpack/$FNPACK_BIN" build_workspace/fnpack
           chmod +x build_workspace/fnpack
 
-      # ========== 项目特有的复制步骤 ==========
       - name: 将提取的文件复制到 app 目录
         run: |
           APP_DIR="build_workspace/${{ steps.set_vars.outputs.app_name }}/app"
@@ -87,7 +91,6 @@ jobs:
           echo "复制完成，app 目录内容："
           ls -la "$APP_DIR"
           ls -la "$APP_DIR/web"
-      # =====================================
 
       - name: 修改 manifest 文件
         run: |
