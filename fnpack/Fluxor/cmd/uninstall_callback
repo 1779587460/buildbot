@@ -15,4 +15,23 @@ else
     echo "保留数据不动"
 fi
 
+# 清除可能的残留进程
+pkill -9 -x mihomo
+
+#清除可能的残留防火墙规则
+# 删除 nftables 表（检查是否存在）
+if nft list tables ip | grep -q fluxor_tproxy; then
+    nft delete table ip fluxor_tproxy
+fi
+
+# 删除 ip rule（检查是否存在）
+if ip rule show | grep -q "fwmark 0x1 lookup 100"; then
+    ip rule del fwmark 1 table 100
+fi
+
+# 删除 ip route（检查是否存在）
+if ip route show table 100 | grep -q "local 0.0.0.0/0 dev lo"; then
+    ip route del local 0.0.0.0/0 dev lo table 100
+fi
+
 exit 0
