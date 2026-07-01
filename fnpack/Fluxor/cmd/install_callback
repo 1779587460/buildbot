@@ -25,6 +25,10 @@ if [ "${TRIM_OLD_APPVER%%.*}" -lt 2 ]; then
     log_msg "清除旧版config"
 fi
 
+if [ -f "${TRIM_PKGVAR}/subscribe.json" ]; then
+    mv "${TRIM_PKGVAR}/subscribe.json" "${TRIM_PKGVAR}/fluxor.json"
+fi
+
 # --- 检测cpu ---
 mkdir -p ${TRIM_APPDEST}/bin
 if [ ${TRIM_SYS_ARCH} = arm ]; then
