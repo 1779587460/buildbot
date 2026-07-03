@@ -1,7 +1,7 @@
 appname=Fluxor
 version=${VERSION}
 display_name=Fluxor
-desc="""<p>🐱基于golang、vue.js重制的小猫咪。</p>"""
+desc="""<p>🐱基于golang、vue.js重制的小猫咪。</p><p>⭐支持融合、切换双模式订阅，支持Tun、TProxy（网关模式）透明代理。</p>"""
 platform=${PLATFORM}
 source=thirdparty
 maintainer=shuangji66
@@ -14,4 +14,3 @@ desktop_applaunchname=Fluxor.Application
 checkport=false
 disable_authorization_path=false
 changelog=${CHANGELOG}
-checksum=cb0be801541e6199447ea428b3aad5b2
