@@ -5,8 +5,11 @@ LOG_FILE="${TRIM_DATA_SHARE_PATHS%%:*}/data/info.log"
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 APP_BIN="${TRIM_APPDEST}/bin/transmission-daemon"
 
-# write the command to start your program here 
-CMD="${APP_BIN} --config-dir ${TRIM_DATA_SHARE_PATHS%%:*}/data --pid-file ${PID_FILE} --logfile ${LOG_FILE}"
+if [ "$log_mode" = "1" ]; then
+    CMD="${APP_BIN} --config-dir ${TRIM_DATA_SHARE_PATHS%%:*}/data --pid-file ${PID_FILE} --logfile ${LOG_FILE}"
+else
+    CMD="${APP_BIN} --config-dir ${TRIM_DATA_SHARE_PATHS%%:*}/data --pid-file ${PID_FILE}"
+fi
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
