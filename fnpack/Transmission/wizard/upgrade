@@ -1,0 +1,25 @@
+[
+  {
+    "stepTitle": "欢迎使用",
+    "items": [
+      {
+        "type": "select",
+        "field": "log_mode",
+        "label": "示例项",
+        "rules": [],
+        "options": [
+          {
+            "label": "关闭",
+            "value": "0"
+          },
+          {
+            "label": "开启",
+            "value": "1"
+          }
+        ],
+        "helpText": "默认关闭，调试时可开启日志输出",
+        "initValue": "0"
+      }
+    ]
+  }
+]
