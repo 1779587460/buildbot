@@ -10,7 +10,7 @@
       "protocol": "http",
       "title": "Transmission",
       "icon": "images/icon_{0}.png",
-      "type": "iframe",
+      "type": "url",
       "port": "${rpc_port}",
       "url": ""
     }
