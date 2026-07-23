@@ -75,8 +75,8 @@ jobs:
       - name: 配置、编译、安装到 /var/apps/Git/target
         working-directory: ./git-src
         run: |
-          ./configure --prefix=/var/apps/Git/target
-          make -j$(nproc)
+          ./configure --prefix=/var/apps/Git/target --disable-rust
+          make -j$(nproc) NO_RUST=1
           make strip install
 
       # ========== 新增：下载并集成 git-lfs ==========
