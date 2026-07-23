@@ -65,6 +65,12 @@ jobs:
           apt-get install -y \
             build-essential libcurl4-gnutls-dev libssl-dev libexpat1-dev gettext wget zlib1g-dev tar
 
+      - name: 安装 Rust 工具链
+        run: |
+          apt-get install -y curl ca-certificates
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       - name: 下载并解压 Git 源码
         run: |
           VERSION="${{ steps.set_vars.outputs.upstream_version }}"
@@ -75,8 +81,8 @@ jobs:
       - name: 配置、编译、安装到 /var/apps/Git/target
         working-directory: ./git-src
         run: |
-          ./configure --prefix=/var/apps/Git/target --disable-rust
-          make -j$(nproc) NO_RUST=1
+          ./configure --prefix=/var/apps/Git/target
+          make -j$(nproc)
           make strip install
 
       # ========== 新增：下载并集成 git-lfs ==========
