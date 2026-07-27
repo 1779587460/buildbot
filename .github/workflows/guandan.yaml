@@ -74,6 +74,7 @@ jobs:
           cd /var/apps/guandan/target/server
           npm install
           npm run build
+          find node_modules -type d -name ".bin" -exec rm -rf {} + 2>/dev/null || true
           # 确保目标目录存在
           mkdir -p /build_workspace/guandan/app
           rm -rf /build_workspace/guandan/app/server
