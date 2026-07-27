@@ -72,34 +72,34 @@ jobs:
           cp "buildbot_repo/fnpack/$FNPACK_BIN" build_workspace/fnpack
           chmod +x build_workspace/fnpack
 
-      - name: 构建 NextExplorer
+      - name: 构建 NextExplorer运行时
         run: |
-          # 显示模板 app 目录原有内容（便于调试）
-          echo "模板 app 目录原有内容："
-          ls -la build_workspace/NextExplorer/app/ || echo "app 目录不存在"
-
-          # 1. 创建临时构建目录
           mkdir -p app/backend app/frontend app/docs
-          mkdir -p temp/backend temp/frontend temp/docs
           
           cp nextexplorer-src/package.json app/
+          cp nextexplorer-src/package-lock.json app/
           cp nextexplorer-src/backend/package.json app/backend/package.json
           cp nextexplorer-src/frontend/package.json app/frontend/package.json
-          cp nextexplorer-src/docs/package.json app/docs/package.json        
+          cp nextexplorer-src/docs/package.json app/docs/package.json
           cd app
           npm ci --omit=dev --workspace backend && npm cache clean --force
 
+      - name: 构建 NextExplorer前端
+        run: |
+          mkdir -p temp/backend temp/frontend temp/docs
 
           cp nextexplorer-src/package.json temp/
+          cp nextexplorer-src/package-lock.json temp/
           cp nextexplorer-src/backend/package.json temp/backend/package.json
           cp nextexplorer-src/frontend/package.json temp/frontend/package.json
-          cp nextexplorer-src/docs/package.json temp/docs/package.json        
+          cp nextexplorer-src/docs/package.json temp/docs/package.json
           cd temp
           npm ci --workspace frontend
           cp -r nextexplorer-src/frontend/* temp/frontend/
           npm run -w frontend build -- --sourcemap false
 
-          
+      - name: 组装 NextExplorer
+        run: |
           mkdir -p build_workspace/NextExplorer/app/server
           mv app/node_modules build_workspace/NextExplorer/app/server/node_modules
           mv app/package.json build_workspace/NextExplorer/app/server/
