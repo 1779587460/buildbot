@@ -80,9 +80,15 @@ jobs:
           # 将提取的 /app 复制到模板的 NextExplorer/app/server 目录
           mkdir -p build_workspace/NextExplorer/app/server
           cp -r /tmp/extracted/app/* build_workspace/NextExplorer/app/server/
+          rm -rf build_workspace/NextExplorer/app/server/healthcheck.js
           cd build_workspace/NextExplorer/app/server/
-          find node_modules -type d -name ".bin" -exec rm -rf {} + 2>/dev/null || true
-          rm -rf healthcheck.js
+          if [ -d "node_modules" ]; then
+            tar -czf node_modules.tar.gz node_modules
+            rm -rf node_modules
+            echo "node_modules 已压缩为 node_modules.tar.gz"
+          else
+            echo "警告：未找到 node_modules 目录"
+          fi
           # 清理临时文件
           rm -rf /tmp/extracted
 
