@@ -150,7 +150,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: fpk-${{ matrix.platform }}
-          path: /build_workspace/*.fpk
+          path: build_workspace/*.fpk
           if-no-files-found: error
 
   publish:
