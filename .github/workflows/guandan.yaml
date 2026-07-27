@@ -27,6 +27,7 @@ jobs:
           - os: ubuntu-24.04-arm
             platform: arm
     runs-on: ${{ matrix.os }}
+    container: debian:bookworm
     outputs:
       app_name: ${{ steps.set_vars.outputs.app_name }}
       manifest_version: ${{ steps.set_vars.outputs.manifest_version }}
@@ -42,10 +43,13 @@ jobs:
           echo "manifest_version=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
           echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
 
-      - name: 安装 Node.js 24
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
+      - name: 安装依赖（Node.js、jq、git等）
+        run: |
+          apt-get update
+          apt-get install -y curl wget git jq
+          # 安装 Node.js 24
+          curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+          apt-get install -y nodejs
 
       - name: 检出 buildbot 仓库（包含 guandan 源码）
         uses: actions/checkout@v6
@@ -64,11 +68,15 @@ jobs:
           cp "buildbot_repo/fnpack/$FNPACK_BIN" build_workspace/fnpack
           chmod +x build_workspace/fnpack
 
-      - name: 构建前端（进入 app/server 执行 npm install 和 build）
-        working-directory: ./build_workspace/guandan/app/server
+      - name: 复制 guandan 到 /var/apps 并构建
         run: |
+          mkdir -p /var/apps
+          cp -r build_workspace/guandan /var/apps/
+          cd /var/apps/guandan/app/server
           npm install
           npm run build
+          # 将构建后的 app 目录复制回 build_workspace
+          cp -r /var/apps/guandan/app build_workspace/guandan/
 
       - name: 修改 manifest 文件
         run: |
@@ -79,7 +87,6 @@ jobs:
           fi
           MANIFEST_VERSION="${{ steps.set_vars.outputs.manifest_version }}"
           CHANGELOG="${{ steps.set_vars.outputs.changelog }}"
-          sudo apt-get update && sudo apt-get install -y jq
           ESCAPED_CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -sRr @json)
           sed -i "s/\${VERSION}/$MANIFEST_VERSION/g" "$MANIFEST_PATH"
           sed -i "s/\${CHANGELOG}/$ESCAPED_CHANGELOG/g" "$MANIFEST_PATH"
