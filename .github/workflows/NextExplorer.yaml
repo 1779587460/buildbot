@@ -27,7 +27,6 @@ jobs:
           - os: ubuntu-24.04-arm
             platform: arm
     runs-on: ${{ matrix.os }}
-    container: debian:bookworm
     outputs:
       app_name: ${{ steps.set_vars.outputs.app_name }}
       manifest_version: ${{ steps.set_vars.outputs.manifest_version }}
@@ -43,74 +42,49 @@ jobs:
           echo "manifest_version=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
           echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
 
-      - name: 安装依赖（Node.js、jq、git等）
+      - name: 安装 jq
         run: |
-          apt-get update
-          apt-get install -y curl wget git jq
-          curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
-          apt-get install -y nodejs
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: 检出 buildbot 仓库（包含 NextExplorer 模板）
         uses: actions/checkout@v6
         with:
           path: buildbot_repo
 
-      - name: 克隆 NextExplorer 源码
-        run: |
-          git clone https://github.com/nxzai/NextExplorer.git /nextexplorer-src
-          ls -la /nextexplorer-src
-
       - name: 准备 fnpack 工作区
         run: |
-          mkdir -p /build_workspace
-          cp -r "buildbot_repo/fnpack/${{ steps.set_vars.outputs.app_name }}" /build_workspace/
+          mkdir -p build_workspace
+          cp -r "buildbot_repo/fnpack/${{ steps.set_vars.outputs.app_name }}" build_workspace/
           if [ "${{ matrix.os }}" = "ubuntu-24.04" ]; then
             FNPACK_BIN="fnpack-1.2.1-linux-amd64"
           else
             FNPACK_BIN="fnpack-1.2.1-linux-arm64"
           fi
-          cp "buildbot_repo/fnpack/$FNPACK_BIN" /build_workspace/fnpack
-          chmod +x /build_workspace/fnpack
+          cp "buildbot_repo/fnpack/$FNPACK_BIN" build_workspace/fnpack
+          chmod +x build_workspace/fnpack
 
-      - name: 构建 NextExplorer
+      - name: 使用 Docker 拉取镜像并提取 /app 目录
         run: |
-          # 1. 创建临时构建目录
-          mkdir -p /var/apps/NextExplorer/target/server
-          
-          # 2. 复制源码根目录的 package.json 到 target/server
-          cp -r /nextexplorer-src/* /var/apps/NextExplorer/target/server
-          cd /var/apps/NextExplorer/target/server
-          npm install
-          # 删除 .bin 软链接
+          # 拉取镜像（自动匹配架构）
+          docker pull nxzai/explorer:latest
+          # 创建容器
+          CONTAINER_ID=$(docker create nxzai/explorer:latest)
+          # 提取 /app 目录到临时位置
+          mkdir -p /tmp/extracted/app
+          docker cp "$CONTAINER_ID":/app /tmp/extracted/
+          docker rm "$CONTAINER_ID"
+          # 显示提取的内容
+          echo "提取的文件列表："
+          ls -la /tmp/extracted/app/
+          # 将提取的 /app 复制到模板的 NextExplorer/app/server 目录
+          mkdir -p build_workspace/NextExplorer/app/server
+          cp -r /tmp/extracted/app/* build_workspace/NextExplorer/app/server/
+          cd build_workspace/NextExplorer/app/server/
           find node_modules -type d -name ".bin" -exec rm -rf {} + 2>/dev/null || true
-          mv /var/apps/NextExplorer/target/server/node_modules /var/apps/NextExplorer/target/
-          rm -rf /var/apps/NextExplorer/target/server
-          
-          # 3. 复制 backend/src 到工作目录
-          mkdir -p /var/apps/NextExplorer/target/server
-          cp -r /nextexplorer-src/backend/src /var/apps/NextExplorer/target/server/
-          
-          # 4. 复制 frontend 到临时目录构建
-          mkdir -p /var/apps/NextExplorer/frontend_build
-          cp -r /nextexplorer-src/frontend/* /var/apps/NextExplorer/frontend_build/
-          cd /var/apps/NextExplorer/frontend_build
-          npm install
-          npm run build
-          
-          # 5. 将 dist 重命名为 public 并复制到工作目录的 src 同级
-          if [ -d "dist" ]; then
-            mv dist /var/apps/NextExplorer/target/server/src/public
-          else
-            echo "错误：未找到构建输出目录 (dist 或 build)"
-            exit 1
-          fi
-          
-          # 7. 将构建结果复制到 build_workspace
-          mv /var/apps/NextExplorer/target/node_modules /var/apps/NextExplorer/target/server/
-          cp -r /var/apps/NextExplorer/target/server /build_workspace/NextExplorer/app/
-          
-          echo "构建完成，app 目录内容："
-          ls -la /build_workspace/NextExplorer/app/
+          rm -rf healthcheck.js
+          # 清理临时文件
+          rm -rf /tmp/extracted
 
       - name: 修改 manifest 文件
         run: |
@@ -130,7 +104,7 @@ jobs:
 
       - name: 执行 fnpack 打包
         run: |
-          cd /build_workspace
+          cd build_workspace
           ./fnpack build "${{ steps.set_vars.outputs.app_name }}"
           FPK_FILE=$(ls *.fpk | head -n 1)
           if [ -z "$FPK_FILE" ]; then
@@ -147,7 +121,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: fpk-${{ matrix.platform }}
-          path: /build_workspace/*.fpk
+          path: build_workspace/*.fpk
           if-no-files-found: error
 
   publish:
