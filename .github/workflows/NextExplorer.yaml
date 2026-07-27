@@ -82,7 +82,7 @@ jobs:
           cd /var/apps/NextExplorer/target/server
           npm install
           # 删除 .bin 软链接
-          find node_modules -type d -name ".bin" -exec rm -rf {} + 2>/dev/null || true
+          #find node_modules -type d -name ".bin" -exec rm -rf {} + 2>/dev/null || true
           
           # 3. 复制 backend/src 到工作目录
           mkdir -p /var/apps/NextExplorer/target/server
