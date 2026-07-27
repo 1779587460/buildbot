@@ -84,7 +84,7 @@ jobs:
           cd app
           npm ci --omit=dev --workspace backend && npm cache clean --force
 
-      - name: 构建 NextExplorer前端
+      - name: 构建 NextExplorer前端编译环境
         run: |
           mkdir -p temp/backend temp/frontend temp/docs
 
@@ -95,6 +95,9 @@ jobs:
           cp nextexplorer-src/docs/package.json temp/docs/package.json
           cd temp
           npm ci --workspace frontend
+
+      - name: 构建 NextExplorer前端
+        run: |
           cp -r nextexplorer-src/frontend/* temp/frontend/
           npm run -w frontend build -- --sourcemap false
 
