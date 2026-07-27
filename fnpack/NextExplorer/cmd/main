@@ -1,6 +1,10 @@
 #!/bin/bash
 export PATH=/var/apps/nodejs_v24/target/bin:$PATH
 export PORT="$port"
+export CONFIG_DIR="${TRIM_PKGVAR}/config"
+export CACHE_DIR="${TRIM_PKGVAR}/cache"
+export VOLUME_ROOT="/"
+export AUTH_MODE=disabled
 LOG_FILE="${TRIM_PKGVAR}/info.log"
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 
