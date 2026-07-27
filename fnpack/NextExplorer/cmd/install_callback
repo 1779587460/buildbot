@@ -1,0 +1,6 @@
+#!/bin/bash
+export PATH=/var/apps/nodejs_v24/target/bin:$PATH
+cd ${TRIM_APPDEST}/server
+npm rebuild --ignore-scripts
+
+exit 0
