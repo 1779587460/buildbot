@@ -7,6 +7,7 @@ else
     echo "未找到node_modules.tar.gz" > ${TRIM_TEMP_LOGFILE}
     exit 1
 fi
+rm -f node_modules.tar.gz
 #npm rebuild --ignore-scripts
 
 mkdir -p ${TRIM_PKGVAR}/config ${TRIM_PKGVAR}/cache
