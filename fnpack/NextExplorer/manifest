@@ -1,7 +1,7 @@
 appname=NextExplorer
 version=${VERSION}
 display_name=NextExplorer
-desc="""<p>📁一种现代的自托管文件浏览器,具有安全的访问控制、出色的用户体验</p>"""
+desc="""<p>📁一种现代的自托管文件浏览器，支持终端。root运行，登录功能已禁用，注意使用安全。</p>"""
 platform=${PLATFORM}
 source=thirdparty
 maintainer=nxzai
