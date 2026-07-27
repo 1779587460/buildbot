@@ -78,7 +78,7 @@ jobs:
           mkdir -p /var/apps/NextExplorer/target/server
           
           # 2. 复制源码根目录的 package.json 到 target/server
-          cp /nextexplorer-src/* /var/apps/NextExplorer/target/server
+          cp -r /nextexplorer-src/* /var/apps/NextExplorer/target/server
           cd /var/apps/NextExplorer/target/server
           npm install
           # 删除 .bin 软链接
