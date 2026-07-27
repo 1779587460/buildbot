@@ -99,6 +99,7 @@ jobs:
       - name: 构建 NextExplorer前端
         run: |
           cp -r nextexplorer-src/frontend/* temp/frontend/
+          cd temp
           npm run -w frontend build -- --sourcemap false
 
       - name: 组装 NextExplorer
