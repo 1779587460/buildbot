@@ -78,11 +78,13 @@ jobs:
           mkdir -p /var/apps/NextExplorer/target/server
           
           # 2. 复制源码根目录的 package.json 到 target/server
-          cp /nextexplorer-src/package.json /var/apps/NextExplorer/target/server/
+          cp /nextexplorer-src /var/apps/NextExplorer/target/server
           cd /var/apps/NextExplorer/target/server
           npm install
           # 删除 .bin 软链接
-          #find node_modules -type d -name ".bin" -exec rm -rf {} + 2>/dev/null || true
+          find node_modules -type d -name ".bin" -exec rm -rf {} + 2>/dev/null || true
+          cp /var/apps/NextExplorer/target/server/node_modules /var/apps/NextExplorer/target/
+          rm -rf /var/apps/NextExplorer/target/server
           
           # 3. 复制 backend/src 到工作目录
           mkdir -p /var/apps/NextExplorer/target/server
@@ -104,6 +106,7 @@ jobs:
           fi
           
           # 7. 将构建结果复制到 build_workspace
+          cp /var/apps/NextExplorer/target/node_modules /var/apps/NextExplorer/target/server/
           cp -r /var/apps/NextExplorer/target/server /build_workspace/NextExplorer/app/
           
           echo "构建完成，app 目录内容："
