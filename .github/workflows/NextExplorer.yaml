@@ -75,7 +75,7 @@ jobs:
       - name: 构建 NextExplorer
         run: |
           # 1. 创建临时构建目录
-          mkdir -p /var/apps/NextExplorer/target
+          mkdir -p /var/apps/NextExplorer/target/server
           
           # 2. 复制源码根目录的 package.json 到 target/server
           cp nextexplorer-src/package.json /var/apps/NextExplorer/target/server/
