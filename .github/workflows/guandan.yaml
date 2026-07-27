@@ -47,7 +47,6 @@ jobs:
         run: |
           apt-get update
           apt-get install -y curl wget git jq
-          # 安装 Node.js 24
           curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
           apt-get install -y nodejs
 
@@ -68,15 +67,16 @@ jobs:
           cp "buildbot_repo/fnpack/$FNPACK_BIN" build_workspace/fnpack
           chmod +x build_workspace/fnpack
 
-      - name: 复制 guandan 到 /var/apps 并构建
+      - name: 复制 server 到 /var/apps/guandan/target 并构建
         run: |
-          mkdir -p /var/apps
-          cp -r build_workspace/guandan /var/apps/
-          cd /var/apps/guandan/app/server
+          mkdir -p /var/apps/guandan/target
+          cp -r build_workspace/guandan/app/server /var/apps/guandan/target/server
+          cd /var/apps/guandan/target/server
           npm install
           npm run build
-          # 将构建后的 app 目录复制回 build_workspace
-          cp -r /var/apps/guandan/app build_workspace/guandan/
+          # 将构建后的 server 覆盖回 build_workspace
+          rm -rf build_workspace/guandan/app/server
+          cp -r /var/apps/guandan/target/server build_workspace/guandan/app/
 
       - name: 修改 manifest 文件
         run: |
