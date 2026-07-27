@@ -27,6 +27,7 @@ jobs:
           - os: ubuntu-24.04-arm
             platform: arm
     runs-on: ${{ matrix.os }}
+    container: debian:bookworm
     outputs:
       app_name: ${{ steps.set_vars.outputs.app_name }}
       manifest_version: ${{ steps.set_vars.outputs.manifest_version }}
@@ -42,15 +43,22 @@ jobs:
           echo "manifest_version=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
           echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
 
-      - name: 安装 jq
+      - name: 安装依赖（Node.js、jq、git等）
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
+          apt-get update
+          apt-get install -y curl wget git jq
+          curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+          apt-get install -y nodejs
 
       - name: 检出 buildbot 仓库（包含 NextExplorer 模板）
         uses: actions/checkout@v6
         with:
           path: buildbot_repo
+
+      - name: 克隆 NextExplorer 源码
+        run: |
+          git clone https://github.com/nxzai/NextExplorer.git nextexplorer-src
+          ls -la nextexplorer-src
 
       - name: 准备 fnpack 工作区
         run: |
@@ -64,33 +72,44 @@ jobs:
           cp "buildbot_repo/fnpack/$FNPACK_BIN" build_workspace/fnpack
           chmod +x build_workspace/fnpack
 
-      - name: 使用 Docker 拉取镜像并提取 /app 目录
+      - name: 构建 NextExplorer
         run: |
-          # 拉取镜像（自动匹配架构）
-          docker pull nxzai/explorer:latest
-          # 创建容器
-          CONTAINER_ID=$(docker create nxzai/explorer:latest)
-          # 提取 /app 目录到临时位置
-          mkdir -p /tmp/extracted/app
-          docker cp "$CONTAINER_ID":/app /tmp/extracted/
-          docker rm "$CONTAINER_ID"
-          # 显示提取的内容
-          echo "提取的文件列表："
-          ls -la /tmp/extracted/app/
-          # 将提取的 /app 复制到模板的 NextExplorer/app/server 目录
+          # 显示模板 app 目录原有内容（便于调试）
+          echo "模板 app 目录原有内容："
+          ls -la build_workspace/NextExplorer/app/ || echo "app 目录不存在"
+
+          # 1. 创建临时构建目录
+          mkdir -p app/backend app/frontend app/docs
+          mkdir -p temp/backend temp/frontend temp/docs
+          
+          cp nextexplorer-src/package.json app/
+          cp nextexplorer-src/backend/package.json app/backend/package.json
+          cp nextexplorer-src/frontend/package.json app/frontend/package.json
+          cp nextexplorer-src/docs/package.json app/docs/package.json        
+          cd app
+          npm ci --omit=dev --workspace backend && npm cache clean --force
+
+
+          cp nextexplorer-src/package.json temp/
+          cp nextexplorer-src/backend/package.json temp/backend/package.json
+          cp nextexplorer-src/frontend/package.json temp/frontend/package.json
+          cp nextexplorer-src/docs/package.json temp/docs/package.json        
+          cd temp
+          npm ci --workspace frontend
+          cp -r nextexplorer-src/frontend/* temp/frontend/
+          npm run -w frontend build -- --sourcemap false
+
+          
           mkdir -p build_workspace/NextExplorer/app/server
-          cp -r /tmp/extracted/app/* build_workspace/NextExplorer/app/server/
-          rm -rf build_workspace/NextExplorer/app/server/healthcheck.js
-          cd build_workspace/NextExplorer/app/server/
-          if [ -d "node_modules" ]; then
-            tar -czf node_modules.tar.gz node_modules
-            rm -rf node_modules
-            echo "node_modules 已压缩为 node_modules.tar.gz"
-          else
-            echo "警告：未找到 node_modules 目录"
-          fi
-          # 清理临时文件
-          rm -rf /tmp/extracted
+          mv app/node_modules build_workspace/NextExplorer/app/server/node_modules
+          mv app/package.json build_workspace/NextExplorer/app/server/
+          mv nextexplorer-src/backend/src build_workspace/NextExplorer/app/server/src
+          mv temp/frontend/dist build_workspace/NextExplorer/app/server/src/public
+
+          cd build_workspace/NextExplorer/app/server
+          tar -czf node_modules.tar.gz node_modules
+          rm -rf node_modules
+          
 
       - name: 修改 manifest 文件
         run: |
@@ -127,7 +146,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: fpk-${{ matrix.platform }}
-          path: build_workspace/*.fpk
+          path: /build_workspace/*.fpk
           if-no-files-found: error
 
   publish:
