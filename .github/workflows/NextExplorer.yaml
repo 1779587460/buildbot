@@ -58,7 +58,7 @@ jobs:
       - name: 克隆 NextExplorer 源码
         run: |
           git clone https://github.com/nxzai/NextExplorer.git /nextexplorer-src
-          ls -la nextexplorer-src
+          ls -la /nextexplorer-src
 
       - name: 准备 fnpack 工作区
         run: |
