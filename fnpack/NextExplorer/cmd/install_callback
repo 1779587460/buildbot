@@ -3,4 +3,6 @@ export PATH=/var/apps/nodejs_v24/target/bin:$PATH
 cd ${TRIM_APPDEST}/server
 npm rebuild --ignore-scripts
 
+mkdir -p ${TRIM_PKGVAR}/config ${TRIM_PKGVAR}/cache
+
 exit 0
