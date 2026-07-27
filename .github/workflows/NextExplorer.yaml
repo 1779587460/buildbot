@@ -57,7 +57,7 @@ jobs:
 
       - name: 克隆 NextExplorer 源码
         run: |
-          git clone https://github.com/nxzai/NextExplorer.git nextexplorer-src
+          git clone https://github.com/nxzai/NextExplorer.git /nextexplorer-src
           ls -la nextexplorer-src
 
       - name: 准备 fnpack 工作区
@@ -78,7 +78,7 @@ jobs:
           mkdir -p /var/apps/NextExplorer/target/server
           
           # 2. 复制源码根目录的 package.json 到 target/server
-          cp nextexplorer-src/package.json /var/apps/NextExplorer/target/server/
+          cp /nextexplorer-src/package.json /var/apps/NextExplorer/target/server/
           cd /var/apps/NextExplorer/target/server
           npm install
           # 删除 .bin 软链接
