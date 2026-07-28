@@ -99,7 +99,7 @@ jobs:
           mv app/package*.json build_workspace/Cloudimgs/app/
           mv app/server build_workspace/Cloudimgs/app/
           mv app/config.js build_workspace/Cloudimgs/app/
-          mv app/client/build build_workspace/Cloudimgs/app/client/build
+          mv app/client/build build_workspace/Cloudimgs/app/client/
 
           cd build_workspace/Cloudimgs/app
           tar -czf node_modules.tar.gz node_modules
