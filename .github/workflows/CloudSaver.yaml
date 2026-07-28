@@ -90,7 +90,7 @@ jobs:
 
       - name: 将提取的产物复制到 CloudSaver/app 模板目录
         run: |
-          cp -r extracted/app/package.json build_workspace/CloudSaver/app/
+          cp -r extracted/app/package*.json build_workspace/CloudSaver/app/
           cp -r extracted/app/dist-final build_workspace/CloudSaver/app/
           cp -r extracted/app/html build_workspace/CloudSaver/app/
           cp -r extracted/app/config/release-content.local.json build_workspace/CloudSaver/app/config/
@@ -105,8 +105,9 @@ jobs:
       - name: 执行 npm install
         run: |
           cd build_workspace/CloudSaver/app
-          npm install
-          find node_modules -type d -name ".bin" -exec rm -rf {} + 2>/dev/null || true
+          npm ci --omit=dev
+          tar -czf node_modules.tar.gz node_modules
+          rm -rf node_modules
 
       - name: 根据架构处理 nginx 二进制（重命名并删除另一架构）
         run: |
