@@ -59,7 +59,7 @@ jobs:
         run: |
           CONTAINER_ID=$(docker create jiangrui1994/cloudsaver:${{ steps.set_vars.outputs.docker_version }})
           mkdir -p extracted/app/config
-          docker cp "$CONTAINER_ID":/app/package.json extracted/app/
+          docker cp "$CONTAINER_ID":/app/package*.json extracted/app/
           docker cp "$CONTAINER_ID":/app/release-content.local.default.json extracted/app/config/release-content.local.json
           docker cp "$CONTAINER_ID":/app/dist-final extracted/app/
           docker cp "$CONTAINER_ID":/usr/share/nginx/html extracted/app/
