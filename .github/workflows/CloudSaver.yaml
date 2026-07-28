@@ -59,7 +59,8 @@ jobs:
         run: |
           CONTAINER_ID=$(docker create jiangrui1994/cloudsaver:${{ steps.set_vars.outputs.docker_version }})
           mkdir -p extracted/app/config
-          docker cp "$CONTAINER_ID":/app/package*.json extracted/app/
+          docker cp "$CONTAINER_ID":/app/package.json extracted/app/
+          docker cp "$CONTAINER_ID":/app/package-lock.json extracted/app/
           docker cp "$CONTAINER_ID":/app/release-content.local.default.json extracted/app/config/release-content.local.json
           docker cp "$CONTAINER_ID":/app/dist-final extracted/app/
           docker cp "$CONTAINER_ID":/usr/share/nginx/html extracted/app/
@@ -90,10 +91,10 @@ jobs:
 
       - name: 将提取的产物复制到 CloudSaver/app 模板目录
         run: |
-          cp -r extracted/app/package*.json build_workspace/CloudSaver/app/
-          cp -r extracted/app/dist-final build_workspace/CloudSaver/app/
-          cp -r extracted/app/html build_workspace/CloudSaver/app/
-          cp -r extracted/app/config/release-content.local.json build_workspace/CloudSaver/app/config/
+          mv extracted/app/package*.json build_workspace/CloudSaver/app/
+          mv extracted/app/dist-final build_workspace/CloudSaver/app/
+          mv extracted/app/html build_workspace/CloudSaver/app/
+          mv extracted/app/config/release-content.local.json build_workspace/CloudSaver/app/config/
           echo "复制完成，app 目录内容："
           ls -la build_workspace/CloudSaver/app/
 
