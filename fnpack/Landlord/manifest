@@ -1,7 +1,7 @@
 appname=Landlord
 version=${VERSION}
 display_name=斗地主
-desc="""<p>♣️欢乐斗地主，支持人机对战、局域网联机、自定义模式</p>"""
+desc="""<p>♣️欢乐斗地主，支持人机对战、局域网联机、自定义模式。</p>"""
 platform=${PLATFORM}
 source=thirdparty
 maintainer=Hanazar-Games
