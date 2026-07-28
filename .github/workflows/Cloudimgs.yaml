@@ -27,6 +27,7 @@ jobs:
           - os: ubuntu-22.04-arm
             platform: arm
     runs-on: ${{ matrix.os }}
+    container: debian:bookworm
     outputs:
       app_name: ${{ steps.set_vars.outputs.app_name }}
       manifest_version: ${{ steps.set_vars.outputs.manifest_version }}
