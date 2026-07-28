@@ -94,7 +94,7 @@ jobs:
 
       - name: 组装 Cloudimgs
         run: |
-          mkdir -p build_workspace/Cloudimgs/app/client/build
+          mkdir -p build_workspace/Cloudimgs/app/client
           mv app/node_modules build_workspace/Cloudimgs/app/
           mv app/package*.json build_workspace/Cloudimgs/app/
           mv app/server build_workspace/Cloudimgs/app/
