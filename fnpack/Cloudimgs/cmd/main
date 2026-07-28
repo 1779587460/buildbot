@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH=/var/apps/nodejs_v24/target/bin:$PATH
 export PORT="$port"
 export STORAGE_PATH="${TRIM_DATA_SHARE_PATHS%%:*}/uploads"
 export KEEP_ORIGINAL_NAME="$keep_origin"
