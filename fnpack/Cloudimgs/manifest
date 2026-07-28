@@ -1,0 +1,17 @@
+appname=Cloudimgs
+version=${VERSION}
+display_name=云图
+desc="""<p>☁️ 云端一隅，拾光深藏。一个简单、开放且强大的自托管图像托管解决方案。</p>"""
+platform=${PLATFORM}
+source=thirdparty
+maintainer=qazzxxx
+maintainer_url=https://github.com/qazzxxx/cloudimgs
+distributor=shuangji66
+distributor_url=https://github.com/shuangji66/FnDepot
+ctl_stop=true
+install_dep_apps=nodejs_v24
+desktop_uidir=ui
+desktop_applaunchname=Cloudimgs.Application
+checkport=false
+disable_authorization_path=false
+changelog=${CHANGELOG}

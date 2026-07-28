@@ -1,0 +1,20 @@
+{
+  ".url": {
+    "Cloudimgs.Application": {
+      "noDisplay": false,
+      "allUsers": false,
+      "fileTypes": [],
+      "control": {
+        "accessPerm": "editable"
+      },
+      "protocol": "",
+      "gatewayPrefix": "",
+      "gatewaySocket": "",
+      "title": "Cloudimgs",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "port": "${port}",
+      "url": ""
+    }
+  }
+}

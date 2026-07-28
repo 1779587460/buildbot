@@ -1,0 +1,22 @@
+{
+  "data-share": {
+    "shares": [
+      {
+        "name": "Cloudimgs",
+        "permission": {
+          "rw": [
+            "Cloudimgs"
+          ]
+        }
+      },
+      {
+        "name": "Cloudimgs/uploads",
+        "permission": {
+          "rw": [
+            "Cloudimgs"
+          ]
+        }
+      }
+    ]
+  }
+}

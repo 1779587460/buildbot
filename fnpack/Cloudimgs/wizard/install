@@ -1,0 +1,64 @@
+[
+  {
+    "stepTitle": "欢迎使用",
+    "items": [
+      {
+        "type": "text",
+        "field": "port",
+        "label": "端口",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入内容"
+          }
+        ],
+        "options": [],
+        "initValue": "32888"
+      },
+      {
+        "type": "password",
+        "field": "admin_password",
+        "label": "密码",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入内容"
+          }
+        ],
+        "options": [],
+        "initValue": ""
+      },
+      {
+        "type": "text",
+        "field": "thumb_width",
+        "label": "瀑布流缩略图宽度（像素）",
+        "rules": [
+          {
+            "required": true,
+            "message": "请输入内容"
+          }
+        ],
+        "options": [],
+        "helpText": "0为原图",
+        "initValue": "0"
+      },
+      {
+        "type": "select",
+        "field": "keep_origin",
+        "label": "保留原始文件名",
+        "rules": [],
+        "options": [
+          {
+            "label": "是",
+            "value": "true"
+          },
+          {
+            "label": "否",
+            "value": "false"
+          }
+        ],
+        "initValue": "false"
+      }
+    ]
+  }
+]
