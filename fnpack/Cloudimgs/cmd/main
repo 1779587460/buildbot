@@ -8,7 +8,7 @@ LOG_FILE="${TRIM_PKGVAR}/info.log"
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 
 # write the command to start your program here 
-CMD=""
+CMD="node ${TRIM_APPDEST}/server/index.js"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
