@@ -1,0 +1,20 @@
+{
+  ".url": {
+    "Mahjong.Application": {
+      "noDisplay": false,
+      "allUsers": false,
+      "fileTypes": [],
+      "control": {
+        "accessPerm": "editable"
+      },
+      "protocol": "",
+      "gatewayPrefix": "",
+      "gatewaySocket": "",
+      "title": "万能麻将",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "port": "${port}",
+      "url": ""
+    }
+  }
+}
