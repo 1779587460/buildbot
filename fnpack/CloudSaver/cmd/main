@@ -1,8 +1,10 @@
 #!/bin/bash
 export PATH=/var/apps/nodejs_v24/target/bin:$PATH
-export PATH=${TRIM_APPDEST}/nginx:$PATH
+export PORT="$backend_port"
+export FRONTEND_PORT="$frontend_port"
+export BACKEND_PORT="$backend_port"
 LOG_FILE="${TRIM_PKGVAR}/logs/info.log"
-PID_FILE="${TRIM_PKGVAR}/nginx.pid"
+PID_FILE="${TRIM_PKGVAR}/app.pid"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
@@ -16,8 +18,9 @@ start_process() {
     log_msg "Starting process ..."
     # run cmd to start process
     cd ${TRIM_APPDEST}
-    npm run start >> ${LOG_FILE} 2>&1 &
-    bash -c nginx-cs >> ${LOG_FILE} 2>&1 &
+    node server.js >> ${LOG_FILE} 2>&1 &
+    printf "%s" "$!" > ${PID_FILE}
+    node dist-final/app.js 2>&1 &
     return 0
 }
 
@@ -25,23 +28,19 @@ stop_process() {
     log_msg "Stopping process..."
 
     # 发送 SIGTERM 信号，请求进程优雅关闭
-    log_msg "正在请求 'nginx-cs' 和 'MainThread' 进程关闭..."
-    pkill -TERM -u CloudSaver -x "nginx-cs"
+    log_msg "正在请求 'MainThread' 进程关闭..."
     pkill -TERM -u CloudSaver -x "MainThread"
 
-    # 循环等待，直到 'nginx-cs' 和 'MainThread' 进程都不再存在
-    while pgrep -u CloudSaver -x "nginx-cs" > /dev/null || pgrep -u CloudSaver -x "MainThread" > /dev/null; do
+    # 循环等待，直到 'MainThread' 进程都不再存在
+    while pgrep -u CloudSaver -x "MainThread" > /dev/null; do
         # 检查哪个进程还在运行，并打印相应日志
-        if pgrep -u CloudSaver -x "nginx-cs" > /dev/null; then
-            log_msg "进程 'nginx-cs' 仍在运行，等待中..."
-        fi
         if pgrep -u CloudSaver -x "MainThread" > /dev/null; then
             log_msg "进程 'MainThread' 仍在运行，等待中..."
         fi
         sleep 1
     done
     
-    log_msg "进程 'cloudsaver-nginx' 和 'MainThread' 均已成功关闭。"
+    log_msg "进程 'MainThread' 均已成功关闭。"
 
     # 清理 PID 文件
     if [ -f "${PID_FILE}" ]; then
