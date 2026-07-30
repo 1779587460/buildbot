@@ -72,17 +72,15 @@ jobs:
           cp "buildbot_repo/fnpack/$FNPACK_BIN" build_workspace/fnpack
           chmod +x build_workspace/fnpack
 
-      - name: 构建 Liars-Bar
+      - name: 构建 Liars-Bar运行时
         run: |
-          mkdir -p temp   
-          cp bar-src/* temp/
-          cd temp
+          cd bar-src
           rm -rf test .git .gitignore CHANGELOG.md LICENSE README.md
           npm install
 
       - name: 组装 Liars-Bar
         run: |
-          mv temp/* build_workspace/Liars-Bar/app/
+          mv bar-src/* build_workspace/Liars-Bar/app/
           cd build_workspace/Liars-Bar/app
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
