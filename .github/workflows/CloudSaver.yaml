@@ -110,33 +110,6 @@ jobs:
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
 
-      - name: 根据架构处理 nginx 二进制（重命名并删除另一架构）
-        run: |
-          NGINX_DIR="build_workspace/CloudSaver/app/nginx"
-          if [ ! -d "$NGINX_DIR" ]; then
-            echo "警告：nginx 目录不存在，跳过处理"
-            exit 0
-          fi
-          if [ "${{ env.PLATFORM }}" = "x86" ]; then
-            TARGET="nginx-x86"
-            OTHER="nginx-arm"
-          else
-            TARGET="nginx-arm"
-            OTHER="nginx-x86"
-          fi
-          if [ -e "$NGINX_DIR/$TARGET" ]; then
-            mv "$NGINX_DIR/$TARGET" "$NGINX_DIR/nginx-cs"
-            echo "已将 $TARGET 重命名为 nginx-cs"
-          else
-            echo "错误：未找到对应架构的 nginx 文件/目录 $TARGET"
-            exit 1
-          fi
-          if [ -e "$NGINX_DIR/$OTHER" ]; then
-            rm -rf "$NGINX_DIR/$OTHER"
-            echo "已删除另一架构文件/目录 $OTHER"
-          fi
-          ls -la "$NGINX_DIR"
-
       - name: 修改 manifest 文件（替换版本号、更新日志和平台）
         run: |
           MANIFEST_PATH="build_workspace/CloudSaver/manifest"
