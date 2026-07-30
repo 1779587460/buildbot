@@ -2,16 +2,18 @@
   ".url": {
     "CloudSaver.Application": {
       "noDisplay": false,
-      "allUsers": true,
+      "allUsers": false,
       "fileTypes": [],
       "control": {
-        "accessPerm": "readonly"
+        "accessPerm": "editable"
       },
       "protocol": "http",
+      "gatewayPrefix": "",
+      "gatewaySocket": "",
       "title": "CloudSaver",
       "icon": "images/icon_{0}.png",
       "type": "iframe",
-      "port": "8008",
+      "port": "${frontend_port}",
       "url": ""
     }
   }
