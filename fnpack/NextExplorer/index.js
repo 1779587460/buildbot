@@ -48,7 +48,7 @@ function detectLocale(supportedLocales) {
     Array.isArray(navigator.languages) &&
     navigator.languages.length
       ? navigator.languages
-      : [typeof navigator !== 'undefined' ? navigator.language : 'en'];
+      : [typeof navigator !== 'undefined' ? navigator.language : 'zh-CN'];
 
   const normalized = prefs
     .filter(Boolean)
