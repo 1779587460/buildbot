@@ -113,7 +113,7 @@ jobs:
 
       - name: 将构建产物复制到 uptime-kuma/app
         run: |
-          cp -r artifact_content/* build_workspace/uptime-kuma/app/
+          mv artifact_content/* build_workspace/uptime-kuma/app/
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
           
