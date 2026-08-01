@@ -1,7 +1,7 @@
 #!/bin/bash
 export PATH=/var/apps/nodejs_v24/target/bin:$PATH
 export PORT="$ui_port"
-export DATA_DIR="${TRIM_PKGETC}"
+export DATA_DIR="${TRIM_PKGVAR}"
 LOG_FILE="${TRIM_PKGVAR}/info.log"
 PID_FILE="${TRIM_PKGVAR}/app.pid"
 
