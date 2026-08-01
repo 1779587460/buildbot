@@ -45,22 +45,22 @@ jobs:
           echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
 
       - name: 安装 Node.js 24
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: 安装 Go 1.26
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: '1.26'
 
       - name: 检出 buildbot 仓库（包含模板）
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: buildbot_repo
 
       - name: 克隆 LitePan 源码
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: Ponphil/LitePan
           path: litepan-src
