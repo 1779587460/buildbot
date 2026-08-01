@@ -63,7 +63,7 @@ jobs:
           ls -la uptime-kuma
 
       - name: 安装 Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'npm'
@@ -79,26 +79,20 @@ jobs:
         run: |
           mkdir artifact_content
           cd uptime-kuma
-          for dir in config db dist extra node_modules public server src; do
+          for dir in db dist node_modules server; do
             if [ -e "$dir" ]; then
               cp -r "$dir" ../artifact_content/
             else
               echo "警告: 目录 $dir 不存在，跳过"
             fi
           done
-          for file in ecosystem.config.js package-lock.json package.json tsconfig-backend.json tsconfig.json; do
-            if [ -f "$file" ]; then
-              cp "$file" ../artifact_content/
-            else
-              echo "警告: 文件 $file 不存在，跳过"
-            fi
-          done
+          cp package*.json ../artifact_content/
           cd ..
           echo "提取完成，artifact_content 内容："
           ls -la artifact_content/
 
       - name: 检出本仓库 (shuangji66/buildbot)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: buildbot_repo
 
@@ -117,12 +111,12 @@ jobs:
           chmod +x build_workspace/fnpack
           echo "PLATFORM=$PLATFORM" >> $GITHUB_ENV
 
-      - name: 将构建产物复制到 uptime-kuma/app/server
+      - name: 将构建产物复制到 uptime-kuma/app
         run: |
-          mkdir -p build_workspace/uptime-kuma/app/server
-          cp -r artifact_content/* build_workspace/uptime-kuma/app/server/
-          # 删除 node_modules 下所有层级的 .bin 目录
-          find build_workspace/uptime-kuma/app/server/node_modules -type d -name ".bin" -exec rm -rf {} + 2>/dev/null || true
+          cp -r artifact_content/* build_workspace/uptime-kuma/app/
+          tar -czf node_modules.tar.gz node_modules
+          rm -rf node_modules
+          
 
       - name: 修改 manifest 文件（替换版本号和更新日志）
         run: |
@@ -171,7 +165,7 @@ jobs:
     if: always() && needs.build.result == 'success' && github.event.inputs.publish == 'true'
     steps:
       - name: 下载所有架构的 fpk 文件
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: fpk-*
           path: fpk_files
