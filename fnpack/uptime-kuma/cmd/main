@@ -15,7 +15,7 @@ start_process() {
 
     log_msg "Starting process ..."
     # run cmd to start process
-    cd ${TRIM_APPDEST}/server
+    cd ${TRIM_APPDEST}
     node server/server.js --port=$UI_PORT --data-dir=${TRIM_PKGETC} --disable-frame-sameorigin=false 2>&1 &
     # write pid to pidfile
     printf "%s" "$!" > ${PID_FILE}
