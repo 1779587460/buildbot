@@ -29,7 +29,6 @@ jobs:
             platform: arm
             goarch: arm64
     runs-on: ${{ matrix.os }}
-    container: debian:bookworm
     outputs:
       app_name: ${{ steps.set_vars.outputs.app_name }}
       manifest_version: ${{ steps.set_vars.outputs.manifest_version }}
@@ -44,11 +43,6 @@ jobs:
           echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
           echo "manifest_version=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
           echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
-
-      - name: 安装基础工具（git、curl、wget）
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends git curl wget
 
       - name: 安装 Node.js 24
         uses: actions/setup-node@v6
