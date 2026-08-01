@@ -98,6 +98,7 @@ jobs:
       - name: 将构建产物复制到 uptime-kuma/app
         run: |
           mv uptime-kuma/db build_workspace/uptime-kuma/app/
+          mv uptime-kuma/src build_workspace/uptime-kuma/app/
           mv uptime-kuma/node_modules build_workspace/uptime-kuma/app/
           mv uptime-kuma/server build_workspace/uptime-kuma/app/
           mv uptime-kuma/dist build_workspace/uptime-kuma/app/
