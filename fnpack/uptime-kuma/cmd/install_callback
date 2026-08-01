@@ -8,4 +8,8 @@ else
 fi
 rm -f node_modules.tar.gz
 
+if [ -f "${TRIM_PKGETC}/kuma.db" ];then
+    mv ${TRIM_PKGETC}/* ${TRIM_PKGVAR}
+fi
+
 exit 0
