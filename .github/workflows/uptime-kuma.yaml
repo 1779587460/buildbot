@@ -75,22 +75,6 @@ jobs:
           npm ci --omit dev --no-audit
           npm run download-dist
 
-      - name: 提取指定文件和目录
-        run: |
-          mkdir artifact_content
-          cd uptime-kuma
-          for dir in db dist node_modules server; do
-            if [ -e "$dir" ]; then
-              cp -r "$dir" ../artifact_content/
-            else
-              echo "警告: 目录 $dir 不存在，跳过"
-            fi
-          done
-          cp package*.json ../artifact_content/
-          cd ..
-          echo "提取完成，artifact_content 内容："
-          ls -la artifact_content/
-
       - name: 检出本仓库 (shuangji66/buildbot)
         uses: actions/checkout@v7
         with:
@@ -113,7 +97,11 @@ jobs:
 
       - name: 将构建产物复制到 uptime-kuma/app
         run: |
-          mv artifact_content/* build_workspace/uptime-kuma/app/
+          mv uptime-kuma/db build_workspace/uptime-kuma/app/
+          mv uptime-kuma/node_modules build_workspace/uptime-kuma/app/
+          mv uptime-kuma/server build_workspace/uptime-kuma/app/
+          mv uptime-kuma/dist build_workspace/uptime-kuma/app/
+          mv uptime-kuma/package*.json build_workspace/uptime-kuma/app/
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
           
