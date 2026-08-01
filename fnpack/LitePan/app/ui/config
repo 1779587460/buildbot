@@ -1,0 +1,20 @@
+{
+  ".url": {
+    "LitePan.Application": {
+      "noDisplay": false,
+      "allUsers": false,
+      "fileTypes": [],
+      "control": {
+        "accessPerm": "editable"
+      },
+      "protocol": "",
+      "gatewayPrefix": "",
+      "gatewaySocket": "",
+      "title": "LitePan",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "url": "",
+      "port": "${port}"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "data-share": {
+    "shares": [
+      {
+        "name": "LitePan",
+        "permission": {
+          "rw": [
+            "LitePan"
+          ]
+        }
+      },
+      {
+        "name": "LitePan/data",
+        "permission": {
+          "rw": [
+            "LitePan"
+          ]
+        }
+      },
+      {
+        "name": "LitePan/strm",
+        "permission": {
+          "rw": [
+            "LitePan"
+          ]
+        }
+      },
+      {
+        "name": "LitePan/mounts",
+        "permission": {
+          "rw": [
+            "LitePan"
+          ]
+        }
+      }
+    ]
+  }
+}

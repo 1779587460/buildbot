@@ -1,0 +1,17 @@
+appname=LitePan
+version=${VERSION}
+display_name=LitePan
+desc="""<p>☁️LitePan是一个专注影音功能的网盘聚合工具，主要功能包括：聚合挂载、STRM刮削、目录整理、缓存管理与自动联动等，让网盘资源更顺畅地进入你的媒体库。</p><p>⭐使用说明：首次打开需登录后台，默认账号和密码均为"admin"，修改默认密码后解锁具体配置。默认strm和数据目录在“应用目录/LitePan”。root运行，注意数据安全。</p>"""
+platform=${PLATFORM}
+source=thirdparty
+maintainer=LitePan
+maintainer_url=https://github.com/Ponphil/LitePan
+distributor=shuangji66
+distributor_url=https://github.com/shuangji66/FnDepot
+ctl_stop=true
+desktop_uidir=ui
+desktop_applaunchname=LitePan.Application
+checkport=false
+disable_authorization_path=false
+checksum=a93704a6dec0456c66f392b138eea2ef
+changelog=${CHANGELOG}
