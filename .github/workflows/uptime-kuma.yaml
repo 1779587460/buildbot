@@ -102,6 +102,7 @@ jobs:
           mv uptime-kuma/server build_workspace/uptime-kuma/app/
           mv uptime-kuma/dist build_workspace/uptime-kuma/app/
           mv uptime-kuma/package*.json build_workspace/uptime-kuma/app/
+          cd build_workspace/uptime-kuma/app
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
           
