@@ -1,8 +1,9 @@
 #!/bin/bash
 export PATH=/var/apps/nodejs_v24/target/bin:$PATH
+export PORT="$ui_port"
+export DATA_DIR="${TRIM_PKGETC}"
 LOG_FILE="${TRIM_PKGVAR}/info.log"
 PID_FILE="${TRIM_PKGVAR}/app.pid"
-UI_PORT="$ui_port"
 
 log_msg() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
@@ -16,7 +17,7 @@ start_process() {
     log_msg "Starting process ..."
     # run cmd to start process
     cd ${TRIM_APPDEST}
-    node server/server.js --port=$UI_PORT --data-dir=${TRIM_PKGETC} --disable-frame-sameorigin=false 2>&1 &
+    node server/server.js --disable-frame-sameorigin=false 2>&1 &
     # write pid to pidfile
     printf "%s" "$!" > ${PID_FILE}
     # log_msg "CMD = ${CMD}"
