@@ -1,13 +1,30 @@
 name: Build Python
 
 on:
-  workflow_dispatch: # 允许在 Actions 页面手动触发
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: 'Python 版本号（例如 3.14.6）'
+        required: true
+        default: '3.14.6'
+        type: string
 
 jobs:
   build-python:
-    runs-on: ubuntu-latest # 使用 GitHub 提供的 Ubuntu 环境
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            container_image: debian:12
+            artifact_suffix: amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            container_image: debian:12
+            artifact_suffix: arm64
+    runs-on: ${{ matrix.runner }}
     container:
-      image: debian:12 # 在 Docker 容器中运行 Debian 12
+      image: ${{ matrix.container_image }}
 
     steps:
       - name: Install build dependencies
@@ -30,31 +47,49 @@ jobs:
             liblzma-dev \
             ca-certificates
 
-      - name: Download Python 3.14 source code
+      - name: Download Python source code
         run: |
-          # 建议前往 https://www.python.org/downloads/ 查看最新版本号
-          PYTHON_VERSION="3.14.6"
+          PYTHON_VERSION="${{ github.event.inputs.python_version }}"
           wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz
           tar -xf Python-${PYTHON_VERSION}.tgz
 
       - name: Configure, Compile, and Install
         run: |
-          cd Python-3.14.6
-          # 配置编译选项，启用优化并指定安装路径
-          ./configure --enable-optimizations --prefix=/var/apps/python314/target
-          # 利用多核加速编译
+          PYTHON_VERSION="${{ github.event.inputs.python_version }}"
+          cd Python-${PYTHON_VERSION}
+          ./configure \
+            --enable-optimizations \
+            --prefix=/var/apps/python314/target \
+            --disable-test-modules
           make -j $(nproc)
-          # 使用 altinstall 避免覆盖系统默认的 python3
           make altinstall
 
       - name: Verify Python version
         run: /var/apps/python314/target/bin/python3.14 --version
 
+      - name: Strip binaries and remove unnecessary files
+        run: |
+          TARGET="/var/apps/python314/target"
+          
+          # 剥离调试符号
+          find "$TARGET/bin" -type f -exec strip --strip-all {} \; 2>/dev/null || true
+          find "$TARGET/lib" -name "*.so" -exec strip --strip-unneeded {} \; 2>/dev/null || true
+          
+          # 删除静态库
+          find "$TARGET" -name "*.a" -exec rm -f {} \;
+          
+          # 删除测试目录（双重保险）
+          find "$TARGET/lib/python3.14" -type d -name "test" -exec rm -rf {} \; 2>/dev/null || true
+          find "$TARGET/lib/python3.14" -type d -name "tests" -exec rm -rf {} \; 2>/dev/null || true
+
       - name: Create distribution tarball
-        run: tar -czf python3.14-fnos.tar.gz -C /var/apps/python314/target .
+        run: |
+          ARTIFACT_NAME="python${{ github.event.inputs.python_version }}-fnos-${{ matrix.arch }}.tar.gz"
+          tar -czf "$ARTIFACT_NAME" -C /var/apps/python314/target .
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
 
       - name: Upload Python build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: python3.14-fnos
-          path: python3.14-fnos.tar.gz
+          name: python-${{ github.event.inputs.python_version }}-fnos-${{ matrix.arch }}
+          path: ${{ env.ARTIFACT_NAME }}
