@@ -1,0 +1,60 @@
+name: Build Custom Python 3.14 for fnOS
+
+on:
+  workflow_dispatch: # 允许在 Actions 页面手动触发
+
+jobs:
+  build-python:
+    runs-on: ubuntu-latest # 使用 GitHub 提供的 Ubuntu 环境
+    container:
+      image: debian:12 # 在 Docker 容器中运行 Debian 12
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y \
+            build-essential \
+            wget \
+            libssl-dev \
+            zlib1g-dev \
+            libbz2-dev \
+            libreadline-dev \
+            libsqlite3-dev \
+            libncursesw5-dev \
+            xz-utils \
+            tk-dev \
+            libgdbm-dev \
+            libc6-dev \
+            libffi-dev \
+            liblzma-dev \
+            ca-certificates
+
+      - name: Download Python 3.14 source code
+        run: |
+          # 建议前往 https://www.python.org/downloads/ 查看最新版本号
+          PYTHON_VERSION="3.14.6"
+          wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz
+          tar -xf Python-${PYTHON_VERSION}.tgz
+
+      - name: Configure, Compile, and Install
+        run: |
+          cd Python-${PYTHON_VERSION}
+          # 配置编译选项，启用优化并指定安装路径
+          ./configure --enable-optimizations --prefix=/var/apps/python314/target
+          # 利用多核加速编译
+          make -j $(nproc)
+          # 使用 altinstall 避免覆盖系统默认的 python3
+          make altinstall
+
+      - name: Verify Python version
+        run: /var/apps/python314/target/bin/python3.14 --version
+
+      - name: Create distribution tarball
+        run: tar -czf python3.14-fnos.tar.gz -C /var/apps/python314/target
+
+      - name: Upload Python build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: python3.14-fnos
+          path: python3.14-fnos.tar.gz
