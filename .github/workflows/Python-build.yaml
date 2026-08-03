@@ -1,4 +1,4 @@
-name: Build Custom Python 3.14 for fnOS
+name: Build Python
 
 on:
   workflow_dispatch: # 允许在 Actions 页面手动触发
@@ -51,7 +51,7 @@ jobs:
         run: /var/apps/python314/target/bin/python3.14 --version
 
       - name: Create distribution tarball
-        run: tar -czf python3.14-fnos.tar.gz -C /var/apps/python314/target
+        run: tar -czf python3.14-fnos.tar.gz -C /var/apps/python314/target .
 
       - name: Upload Python build artifact
         uses: actions/upload-artifact@v7
