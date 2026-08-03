@@ -91,5 +91,5 @@ jobs:
       - name: Upload Python build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: python-${{ github.event.inputs.python_version }}-fnos-${{ matrix.arch }}
+          name: python-${{ github.event.inputs.python_version }}-${{ matrix.arch }}
           path: ${{ env.ARTIFACT_NAME }}
