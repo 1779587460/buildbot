@@ -1,0 +1,95 @@
+name: Build Python3.12
+
+on:
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: 'Python 版本号（例如 3.12.13）'
+        required: true
+        default: '3.12.13'
+        type: string
+
+jobs:
+  build-python:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            container_image: debian:12
+            artifact_suffix: amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            container_image: debian:12
+            artifact_suffix: arm64
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: ${{ matrix.container_image }}
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y \
+            build-essential \
+            wget \
+            libssl-dev \
+            zlib1g-dev \
+            libbz2-dev \
+            libreadline-dev \
+            libsqlite3-dev \
+            libncursesw5-dev \
+            xz-utils \
+            tk-dev \
+            libgdbm-dev \
+            libc6-dev \
+            libffi-dev \
+            liblzma-dev \
+            ca-certificates
+
+      - name: Download Python source code
+        run: |
+          PYTHON_VERSION="${{ github.event.inputs.python_version }}"
+          wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz
+          tar -xf Python-${PYTHON_VERSION}.tgz
+
+      - name: Configure, Compile, and Install
+        run: |
+          PYTHON_VERSION="${{ github.event.inputs.python_version }}"
+          cd Python-${PYTHON_VERSION}
+          ./configure \
+            --enable-optimizations \
+            --prefix=/var/apps/python312/target \
+            --disable-test-modules
+          make -j $(nproc)
+          make altinstall
+
+      - name: Verify Python version
+        run: /var/apps/python312/target/bin/python3.12 --version
+
+      - name: Strip binaries and remove unnecessary files
+        run: |
+          TARGET="/var/apps/python312/target"
+          
+          # 剥离调试符号
+          find "$TARGET/bin" -type f -exec strip --strip-all {} \; 2>/dev/null || true
+          find "$TARGET/lib" -name "*.so" -exec strip --strip-unneeded {} \; 2>/dev/null || true
+          
+          # 删除静态库
+          find "$TARGET" -name "*.a" -exec rm -f {} \;
+          
+          # 删除测试目录（双重保险）
+          find "$TARGET/lib/python3.12" -type d -name "test" -exec rm -rf {} \; 2>/dev/null || true
+          find "$TARGET/lib/python3.12" -type d -name "tests" -exec rm -rf {} \; 2>/dev/null || true
+
+      - name: Create distribution tarball
+        run: |
+          ARTIFACT_NAME="python${{ github.event.inputs.python_version }}-fnos-${{ matrix.arch }}.tar.gz"
+          tar -czf "$ARTIFACT_NAME" -C /var/apps/python312/target .
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+
+      - name: Upload Python build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-${{ github.event.inputs.python_version }}-${{ matrix.arch }}
+          path: ${{ env.ARTIFACT_NAME }}
