@@ -32,13 +32,24 @@ jobs:
         working-directory: ./unicut-src
         run: yarn install --frozen-lockfile
 
+      # 修复 rimraf 缺失问题（有些项目未将其列为依赖，但构建脚本依赖它）
+      - name: 确保 rimraf 可用
+        working-directory: ./unicut-src
+        run: |
+          if ! command -v rimraf &> /dev/null && ! [ -f node_modules/.bin/rimraf ]; then
+            echo "rimraf 未找到，正在安装..."
+            yarn add -D rimraf
+          else
+            echo "rimraf 已存在"
+          fi
+
       - name: 构建
         working-directory: ./unicut-src
         run: yarn build
 
-      - name: 压缩node_modules
+      - name: 压缩 node_modules
+        working-directory: ./unicut-src
         run: |
-          cd ./unicut-src
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
 
