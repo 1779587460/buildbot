@@ -14,3 +14,4 @@ desktop_uidir=ui
 desktop_applaunchname=Openlist-beta.Application
 checkport=false
 disable_authorization_path=false
+changelog=${CHANGELOG}
