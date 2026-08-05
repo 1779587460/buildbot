@@ -38,6 +38,12 @@ jobs:
         working-directory: ./unicut-src
         run: yarn build
 
+      - name: 压缩node_modules
+        run: |
+          cd ./unicut-src
+          tar -czf node_modules.tar.gz node_modules
+          rm -rf node_modules
+
       - name: 上传构建产物（整个源码目录）
         uses: actions/upload-artifact@v7
         with:
