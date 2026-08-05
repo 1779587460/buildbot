@@ -50,6 +50,7 @@ jobs:
       - name: 压缩 node_modules
         working-directory: ./unicut-src
         run: |
+          npm ci --omit=dev
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
 
