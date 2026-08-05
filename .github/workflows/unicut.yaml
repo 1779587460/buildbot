@@ -18,8 +18,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: '24'
-          # 启用 corepack 以便使用 yarn（Node.js 16+ 自带）
-          cache: 'yarn'  # 可选：自动缓存 yarn 依赖，加速构建
 
       - name: 启用 corepack（确保 yarn 可用）
         run: corepack enable
