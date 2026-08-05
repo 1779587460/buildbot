@@ -1,0 +1,45 @@
+name: Build unicut
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: x86
+          - os: ubuntu-24.04-arm
+            platform: arm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 安装 Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          # 启用 corepack 以便使用 yarn（Node.js 16+ 自带）
+          cache: 'yarn'  # 可选：自动缓存 yarn 依赖，加速构建
+
+      - name: 启用 corepack（确保 yarn 可用）
+        run: corepack enable
+
+      - name: 克隆 unicut 源码
+        uses: actions/checkout@v7
+        with:
+          repository: mtsee/unicut
+          path: unicut-src
+
+      - name: 安装依赖
+        working-directory: ./unicut-src
+        run: yarn install --frozen-lockfile
+
+      - name: 构建
+        working-directory: ./unicut-src
+        run: yarn build
+
+      - name: 上传构建产物（整个源码目录）
+        uses: actions/upload-artifact@v7
+        with:
+          name: unicut-${{ matrix.platform }}
+          path: ./unicut-src
