@@ -1,0 +1,19 @@
+{
+  ".url": {
+    "Openlist-beta.Application": {
+      "noDisplay": false,
+      "allUsers": false,
+      "fileTypes": [],
+      "control": {
+        "accessPerm": "editable"
+      },
+      "protocol": "",
+      "gatewayPrefix": "/app/Openlist-beta",
+      "gatewaySocket": "app.sock",
+      "title": "OpenList-Beta",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "url": "/app/Openlist-beta"
+    }
+  }
+}
