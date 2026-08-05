@@ -51,8 +51,7 @@ jobs:
         working-directory: ./unicut-src
         run: |
           rm -rf node_modules
-          npm install
-          npm ci --omit=dev
+          yarn install --production
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
 
