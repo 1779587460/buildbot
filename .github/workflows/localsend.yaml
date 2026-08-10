@@ -28,16 +28,16 @@ jobs:
       - name: 安装依赖
         working-directory: ./web-src
         run: |
-          echo "ignore-scripts=false" >> .npmrc
           npm install -g pnpm
           pnpm install
+          pnpm approve-builds --interactive=false
           pnpm run generate
 
       - name: 压缩 node_modules
         working-directory: ./web-src
         run: |
           rm -rf node_modules
-          pnpm --production
+          pnpm install --prod --frozen-lockfile
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
 
