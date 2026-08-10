@@ -37,15 +37,8 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm run generate
 
-      - name: 压缩 node_modules
-        working-directory: ./web-src
-        run: |
-          pnpm prune --prod
-          tar -czf node_modules.tar.gz node_modules
-          rm -rf node_modules
-
       - name: 上传构建产物
         uses: actions/upload-artifact@v7
         with:
           name: localsend-${{ matrix.platform }}
-          path: ./web-src
+          path: ./web-src/dist
