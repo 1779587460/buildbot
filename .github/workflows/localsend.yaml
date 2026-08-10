@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       signaling_url:
-        description: '信令服务器 WebSocket 地址 (例如 wss://your-domain.com/v1/ws)'
+        description: '信令服务器 WebSocket 地址 (例如 wss://your-domain.com/v1/ws) 路径必需为/v1/ws'
         required: true
         default: 'wss://public.localsend.org/v1/ws'
         type: string
