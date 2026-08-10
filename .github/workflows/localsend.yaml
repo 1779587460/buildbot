@@ -2,17 +2,16 @@ name: Build localsend
 
 on:
   workflow_dispatch:
+    inputs:
+      signaling_url:
+        description: '信令服务器 WebSocket 地址 (例如 wss://your-domain.com/v1/ws)'
+        required: true
+        default: 'wss://public.localsend.org/v1/ws'
+        type: string
 
 jobs:
   build:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-24.04
-            platform: x86
-          - os: ubuntu-24.04-arm
-            platform: arm
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
     steps:
       - name: 安装 Node.js 24
         uses: actions/setup-node@v7
@@ -32,16 +31,11 @@ jobs:
           pnpm install --ignore-scripts --frozen-lockfile
           yes | pnpm approve-builds || true
           pnpm install --frozen-lockfile
-          pnpm run generate
+          # 设置信令服务器地址环境变量并执行构建
+          SIGNALING_URL="${{ github.event.inputs.signaling_url }}" pnpm run generate
 
-      - name: 精简生产依赖（跳过脚本）
-        working-directory: ./web-src
-        run: |
-          tar -czf node_modules.tar.gz node_modules
-          rm -rf node_modules
-
-      - name: 上传构建产物（整个源码目录）
+      - name: 上传构建产物
         uses: actions/upload-artifact@v7
         with:
-          name: localsend-${{ matrix.platform }}
-          path: ./web-src
+          name: dist
+          path: ./web-src/dist
