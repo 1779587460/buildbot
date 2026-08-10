@@ -1,0 +1,31 @@
+name: Extract server from signaling-server image
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: amd64
+          - os: ubuntu-24.04-arm
+            platform: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 拉取镜像（自动匹配架构）
+        run: |
+          docker pull ssakm/localsend-signaling-server:latest
+
+      - name: 创建临时容器并提取 /server 文件
+        run: |
+          container_id=$(docker create ssakm/localsend-signaling-server:latest)
+          docker cp "$container_id":/server ./server
+          docker rm "$container_id"
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-${{ matrix.platform }}
+          path: ./server
