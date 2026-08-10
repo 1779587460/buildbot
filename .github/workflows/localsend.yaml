@@ -29,8 +29,10 @@ jobs:
         working-directory: ./web-src
         run: |
           echo "ignore-scripts=false" > .npmrc
+          export PNPM_IGNORE_SCRIPTS=false
+          export NPM_CONFIG_IGNORE_SCRIPTS=false
           npm install -g pnpm
-          pnpm install
+          pnpm install --ignore-scripts=false
           pnpm run generate
 
       - name: 压缩 node_modules
