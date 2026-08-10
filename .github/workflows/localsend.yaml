@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: '24'
 
-      - name: 克隆 unicut 源码
+      - name: 克隆源码
         uses: actions/checkout@v7
         with:
           repository: localsend/web
@@ -44,7 +44,7 @@ jobs:
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
 
-      - name: 上传构建产物（整个源码目录）
+      - name: 上传构建产物
         uses: actions/upload-artifact@v7
         with:
           name: localsend-${{ matrix.platform }}
