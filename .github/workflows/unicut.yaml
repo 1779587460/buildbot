@@ -1,4 +1,4 @@
-name: Build unicut
+name: Build localsend
 
 on:
   workflow_dispatch:
@@ -19,44 +19,29 @@ jobs:
         with:
           node-version: '24'
 
-      - name: 启用 corepack（确保 yarn 可用）
-        run: corepack enable
-
       - name: 克隆 unicut 源码
         uses: actions/checkout@v7
         with:
-          repository: mtsee/unicut
-          path: unicut-src
+          repository: localsend/web
+          path: web-src
 
       - name: 安装依赖
-        working-directory: ./unicut-src
-        run: yarn install --frozen-lockfile
-
-      # 修复 rimraf 缺失问题（有些项目未将其列为依赖，但构建脚本依赖它）
-      - name: 确保 rimraf 可用
-        working-directory: ./unicut-src
+        working-directory: ./web-src
         run: |
-          if ! command -v rimraf &> /dev/null && ! [ -f node_modules/.bin/rimraf ]; then
-            echo "rimraf 未找到，正在安装..."
-            yarn add -D rimraf
-          else
-            echo "rimraf 已存在"
-          fi
-
-      - name: 构建
-        working-directory: ./unicut-src
-        run: yarn build
+          npm install -g pnpm
+          pnpm install
+          pnpm run generate
 
       - name: 压缩 node_modules
-        working-directory: ./unicut-src
+        working-directory: ./web-src
         run: |
           rm -rf node_modules
-          yarn install --production
+          pnpm --production
           tar -czf node_modules.tar.gz node_modules
           rm -rf node_modules
 
       - name: 上传构建产物（整个源码目录）
         uses: actions/upload-artifact@v7
         with:
-          name: unicut-${{ matrix.platform }}
-          path: ./unicut-src
+          name: localsend-${{ matrix.platform }}
+          path: ./web-src
