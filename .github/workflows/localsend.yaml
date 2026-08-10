@@ -5,7 +5,14 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: x86
+          - os: ubuntu-24.04-arm
+            platform: arm
+    runs-on: ${{ matrix.os }}
     steps:
       - name: 安装 Node.js 24
         uses: actions/setup-node@v7
@@ -18,7 +25,7 @@ jobs:
           repository: localsend/web
           path: web-src
 
-      - name: 安装依赖
+      - name: 构建
         working-directory: ./web-src
         run: |
           npm install -g pnpm
@@ -27,8 +34,14 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm run generate
 
-      - name: 上传构建产物
+      - name: 精简生产依赖（跳过脚本）
+        working-directory: ./web-src
+        run: |
+          tar -czf node_modules.tar.gz node_modules
+          rm -rf node_modules
+
+      - name: 上传构建产物（整个源码目录）
         uses: actions/upload-artifact@v7
         with:
-          name: localsend
-          path: ./web-src/dist
+          name: localsend-${{ matrix.platform }}
+          path: ./web-src
