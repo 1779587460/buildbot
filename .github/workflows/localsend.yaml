@@ -5,14 +5,7 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-24.04
-            platform: x86
-          - os: ubuntu-24.04-arm
-            platform: arm
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: 安装 Node.js 24
         uses: actions/setup-node@v7
@@ -28,9 +21,6 @@ jobs:
       - name: 安装依赖
         working-directory: ./web-src
         run: |
-          echo "ignore-scripts=false" > .npmrc
-          export PNPM_IGNORE_SCRIPTS=false
-          export NPM_CONFIG_IGNORE_SCRIPTS=false
           npm install -g pnpm
           pnpm install --ignore-scripts --frozen-lockfile
           yes | pnpm approve-builds || true
@@ -40,5 +30,5 @@ jobs:
       - name: 上传构建产物
         uses: actions/upload-artifact@v7
         with:
-          name: localsend-${{ matrix.platform }}
+          name: localsend
           path: ./web-src/dist
