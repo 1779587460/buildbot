@@ -28,6 +28,7 @@ jobs:
       - name: 安装依赖
         working-directory: ./web-src
         run: |
+          echo "ignore-scripts=false" >> .npmrc
           npm install -g pnpm
           pnpm install
           pnpm run generate
