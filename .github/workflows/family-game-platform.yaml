@@ -22,7 +22,7 @@ jobs:
         working-directory: ./game-src
         run: |
           npm ci
-          npm build
+          npm run build
 
       - name: 上传构建产物
         uses: actions/upload-artifact@v7
