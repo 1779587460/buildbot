@@ -1,0 +1,31 @@
+name: Build family-game-platform
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 安装 Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: 克隆源码
+        uses: actions/checkout@v7
+        with:
+          repository: Figri/family-game-platform
+          path: game-src
+
+      - name: 构建
+        working-directory: ./game-src
+        run: |
+          npm ci
+          npm build
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: out
+          path: ./game-src/out
