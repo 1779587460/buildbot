@@ -78,19 +78,29 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cd ${{ env.BUILD_DIR }}
-          cmake ${{ env.SOURCE_DIR }} \
-            -DCMAKE_INSTALL_PREFIX=/var/apps/MySQL8/target \
-            -DMYSQL_DATADIR=/var/apps/MySQL8/var/data \
-            -DDEFAULT_CHARSET=utf8mb4 \
-            -DDEFAULT_COLLATION=utf8mb4_unicode_ci \
-            -DWITH_BOOST=/usr/local/boost \
-            -DWITH_SSL=system \
-            -DWITH_ZLIB=system \
-            -DWITH_LZ4=system \
-            -DWITH_ZSTD=system \
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DCMAKE_INSTALL_DO_STRIP=ON   # 安装时自动 strip
+            cd ${{ env.BUILD_DIR }}
+            cmake ${{ env.SOURCE_DIR }} \
+              -DCMAKE_INSTALL_PREFIX=/var/apps/MySQL8/target \
+              -DMYSQL_DATADIR=/var/apps/MySQL8/var/data \
+              -DDEFAULT_CHARSET=utf8mb4 \
+              -DDEFAULT_COLLATION=utf8mb4_unicode_ci \
+              -DWITH_BOOST=/usr/local/boost \
+              -DWITH_SSL=system \
+              -DWITH_ZLIB=system \
+              -DWITH_LZ4=system \
+              -DWITH_ZSTD=system \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_DO_STRIP=ON \
+              -DWITHOUT_SERVER=OFF \
+              -DWITH_EMBEDDED_SERVER=OFF \
+              -DWITH_PARTITION_STORAGE_ENGINE=ON \
+              -DWITH_INNOBASE_STORAGE_ENGINE=ON \
+              -DWITH_MYISAM_STORAGE_ENGINE=ON \
+              -DWITH_FEDERATED_STORAGE_ENGINE=OFF \
+              -DWITH_BLACKHOLE_STORAGE_ENGINE=OFF \
+              -DWITH_EXAMPLE_STORAGE_ENGINE=OFF \
+              -DWITH_PERFSCHEMA_STORAGE_ENGINE=ON \
+              -DWITH_ARCHIVE_STORAGE_ENGINE=OFF
 
       - name: Build (using all cores)
         run: |
