@@ -1,0 +1,133 @@
+name: Build MySQL from Source (Multi-Arch, Debian 12)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mysql_version:
+        description: 'MySQL version to build (e.g., 8.4.11)'
+        required: false
+        default: '8.4.11'
+
+env:
+  MYSQL_VERSION: ${{ github.event.inputs.mysql_version || '8.4.11' }}
+  INSTALL_PREFIX: /var/apps/MySQL8/target
+  BUILD_DIR: /build
+  SOURCE_DIR: /mysql-src
+
+jobs:
+  build:
+    name: Build on ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: debian:12
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            arch: x86_64
+          - runner: ubuntu-22.04-arm
+            arch: arm64
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt update
+          apt install -y --no-install-recommends \
+            build-essential cmake \
+            libncurses-dev bison \
+            pkg-config \
+            libssl-dev \
+            libreadline-dev \
+            zlib1g-dev \
+            liblz4-dev \
+            libzstd-dev \
+            wget \
+            git \
+            file \
+            findutils
+          # 安装 strip 命令（已包含在 binutils 中）
+          apt install -y binutils
+
+      - name: Download MySQL source
+        run: |
+          mkdir -p ${{ env.SOURCE_DIR }}
+          cd ${{ env.SOURCE_DIR }}
+          wget -q https://dev.mysql.com/get/Downloads/MySQL-${MYSQL_VERSION%.*}/mysql-${MYSQL_VERSION}.tar.gz
+          tar -xzf mysql-${MYSQL_VERSION}.tar.gz --strip-components=1
+
+      - name: Cache Boost library
+        id: cache-boost
+        uses: actions/cache@v6
+        with:
+          path: /usr/local/boost
+          key: ${{ runner.os }}-boost-${{ env.MYSQL_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-boost-
+
+      - name: Download Boost (if not cached)
+        if: steps.cache-boost.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /usr/local/boost
+          wget -q -O /tmp/boost.tar.gz https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz
+          tar -xzf /tmp/boost.tar.gz -C /usr/local/boost --strip-components=1
+
+      - name: Create build directory
+        run: mkdir -p ${{ env.BUILD_DIR }}
+
+      - name: Configure CMake
+        run: |
+          cd ${{ env.BUILD_DIR }}
+          cmake ${{ env.SOURCE_DIR }} \
+            -DCMAKE_INSTALL_PREFIX=/var/apps/MySQL8/target \
+            -DMYSQL_DATADIR=/var/apps/MySQL8/var/data \
+            -DDEFAULT_CHARSET=utf8mb4 \
+            -DDEFAULT_COLLATION=utf8mb4_unicode_ci \
+            -DWITH_BOOST=/usr/local/boost \
+            -DWITH_SSL=system \
+            -DWITH_ZLIB=system \
+            -DWITH_LZ4=system \
+            -DWITH_ZSTD=system \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_INSTALL_DO_STRIP=ON   # 安装时自动 strip
+
+      - name: Build (using all cores)
+        run: |
+          cd ${{ env.BUILD_DIR }}
+          make -j$(nproc)
+
+      - name: Install to prefix
+        run: |
+          cd ${{ env.BUILD_DIR }}
+          make install
+
+      - name: Manual strip (extra safety) and remove unnecessary files
+        run: |
+          # 手动 strip 所有可执行文件和共享库（补漏）
+          find ${{ env.INSTALL_PREFIX }} -type f \( -name "*.so*" -o -name "mysqld" -o -name "mysql" -o -name "mysqladmin" -o -name "mysqldump" \) -exec strip -s {} \; 2>/dev/null || true
+
+          # 删除静态库、文档、测试套件等非必需内容
+          rm -rf \
+            ${{ env.INSTALL_PREFIX }}/man \
+            ${{ env.INSTALL_PREFIX }}/docs \
+            ${{ env.INSTALL_PREFIX }}/mysql-test \
+            ${{ env.INSTALL_PREFIX }}/sql-bench \
+            ${{ env.INSTALL_PREFIX }}/include \
+            ${{ env.INSTALL_PREFIX }}/lib/*.a \
+            ${{ env.INSTALL_PREFIX }}/lib/debug \
+            ${{ env.INSTALL_PREFIX }}/share
+
+          # 减小体积：删除 .pyc 文件（如果有）
+          find ${{ env.INSTALL_PREFIX }} -name "*.pyc" -delete
+
+      - name: Create tarball of installed files
+        run: |
+          cd ${{ env.INSTALL_PREFIX }}
+          tar -czf /tmp/mysql-${{ env.MYSQL_VERSION }}-${{ matrix.arch }}-linux.tar.gz .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: mysql-${{ env.MYSQL_VERSION }}-${{ matrix.arch }}
+          path: /tmp/mysql-${{ env.MYSQL_VERSION }}-${{ matrix.arch }}-linux.tar.gz
+          retention-days: 7
