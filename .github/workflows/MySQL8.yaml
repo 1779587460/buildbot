@@ -43,7 +43,7 @@ jobs:
             liblz4-dev \
             libzstd-dev \
             wget \
-            ca-certificates \ 
+            ca-certificates \
             git \
             file \
             findutils
