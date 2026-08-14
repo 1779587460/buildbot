@@ -55,12 +55,6 @@ jobs:
         run: |
            rm -rf .github .git
 
-           # 3. 删除所有源码、测试文件、TS 源文件（保留 dist 和 package.json）
-           find . -type d \( -name "src" -o -name "test" -o -name "__tests__" -o -name "scripts" \) -not -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
-           find . -name "*.ts" -not -name "*.d.ts" -not -path "*/node_modules/*" -delete 2>/dev/null || true
-           find . -name "tsconfig*.json" -not -path "*/node_modules/*" -delete 2>/dev/null || true
-           find . -type d -name ".cache" -not -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
-
       - name: Compress entire node directory
         run: |
           tar -czf node.tar.gz node
