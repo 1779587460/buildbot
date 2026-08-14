@@ -1,0 +1,65 @@
+name: Build DeepSeek Harness
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            node_url: https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            node_url: https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz
+
+    steps:
+      - name: Checkout deepseek-harness
+        uses: actions/checkout@v7
+        with:
+          repository: deepseek-ai/deepseek-harness
+          path: server
+
+      - name: Download and setup Node.js
+        run: |
+          # 下载 Node.js 二进制
+          curl -L -o node.tar.xz ${{ matrix.node_url }}
+          tar -xf node.tar.xz
+          mv node-v24.19.0-linux-* node
+
+          # 将 node/bin 加入 PATH（全局可用）
+          echo "$(pwd)/node/bin" >> $GITHUB_PATH
+
+          # 设置 pnpm 的家目录和存储目录（全部放在 node/.pnpm 下）
+          echo "PNPM_HOME=$(pwd)/node/bin" >> $GITHUB_ENV
+          echo "PNPM_STORE_DIR=$(pwd)/node/.pnpm/store" >> $GITHUB_ENV
+
+      - name: Enable Corepack and install pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies
+        working-directory: server
+        run: pnpm install
+
+      - name: Build project
+        working-directory: server
+        run: pnpm run build
+
+      - name: Compress node_modules and clean up
+        working-directory: server
+        run: |
+          tar -czf node_modules.tar.gz node_modules
+          rm -rf node_modules
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: deepseek-harness-${{ matrix.arch }}
+          path: |
+            server/
+            node/
