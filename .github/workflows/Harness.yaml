@@ -34,8 +34,7 @@ jobs:
           echo "$(pwd)/node/bin" >> $GITHUB_PATH
 
           # 设置 pnpm 的家目录和存储目录（全部放在 node/.pnpm 下）
-          echo "PNPM_HOME=$(pwd)/node/bin" >> $GITHUB_ENV
-          echo "PNPM_STORE_DIR=$(pwd)/.pnpm/store" >> $GITHUB_ENV
+          echo "PNPM_HOME=$(pwd)/.pnpm" >> $GITHUB_ENV
 
       - name: Enable Corepack and install pnpm
         run: |
