@@ -53,8 +53,6 @@ jobs:
       - name: Prune to production dependencies and clean sources
         working-directory: server
         run: |
-           # 1. 切换到生产依赖
-           pnpm install --prod --ignore-scripts
            rm -rf .github .git
 
            # 3. 删除所有源码、测试文件、TS 源文件（保留 dist 和 package.json）
@@ -71,7 +69,13 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: deepseek-harness-${{ matrix.arch }}
+          name: server-${{ matrix.arch }}
           path: |
             server.tar.gz
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: node-${{ matrix.arch }}
+          path: |
             node.tar.gz
