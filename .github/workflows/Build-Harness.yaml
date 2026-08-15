@@ -68,8 +68,11 @@ jobs:
         run: |
           pnpm install
           pnpm run build
-          cd native/landlock-run
-          node tsx ./scripts/build.ts
+
+      - name: 构建landlock-run
+        working-directory: server/native/landlock-run
+        run: |
+          pnpm run build:native
 
       - name: 清理源码（移除 .git 和 .github）
         working-directory: server
