@@ -2,6 +2,7 @@
 export PATH=/var/apps/nodejs_v24/target/bin:$PATH
 export HOME="${TRIM_PKGVAR}"
 export PROXY_PORT="$port"
+export PROXY_HTTPS="$proxy_https"
 if [ "$proxy_mode" = "1" ];then
     export http_proxy="$proxy_addr"
     export https_proxy="$proxy_addr"
