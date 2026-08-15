@@ -22,10 +22,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-24.04
+          - os: ubuntu-22.04
             platform: x86
             node_url: https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-22.04-arm
             platform: arm
             node_url: https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-arm64.tar.xz
     runs-on: ${{ matrix.os }}
@@ -68,6 +68,8 @@ jobs:
         run: |
           pnpm install
           pnpm run build
+          cd native/landlock-run
+          node tsx ./scripts/build.ts
 
       - name: 清理源码（移除 .git 和 .github）
         working-directory: server
