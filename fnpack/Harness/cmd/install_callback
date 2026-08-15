@@ -2,7 +2,7 @@
 
 cd ${TRIM_APPDEST}
 tar -xzf server.tar.gz
-tar -xzf node.tar.gz
-rm -f server.tar.gz node.tar.gz
+#tar -xzf node.tar.gz
+rm -f server.tar.gz
 
 exit 0
