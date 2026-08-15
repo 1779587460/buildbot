@@ -14,6 +14,32 @@
         ],
         "options": [],
         "initValue": "3079"
+      },
+      {
+        "type": "select",
+        "field": "proxy_mode",
+        "label": "开启代理",
+        "rules": [],
+        "options": [
+          {
+            "label": "否",
+            "value": "0"
+          },
+          {
+            "label": "是",
+            "value": "1"
+          }
+        ],
+        "helpText": "操作git等工具网络超时时，可为Harness添加代理",
+        "initValue": "0"
+      },
+      {
+        "type": "text",
+        "field": "proxy_addr",
+        "label": "代理地址",
+        "rules": [],
+        "options": [],
+        "initValue": "http://192.x.x.x:7890"
       }
     ]
   }
