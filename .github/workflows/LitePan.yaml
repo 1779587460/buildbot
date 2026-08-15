@@ -62,7 +62,8 @@ jobs:
       - name: 克隆 LitePan 源码
         uses: actions/checkout@v7
         with:
-          repository: Ponphil/LitePan
+          #repository: Ponphil/LitePan
+          repository: shuangji66/LitePan
           path: litepan-src
 
       - name: 构建前端（web）
