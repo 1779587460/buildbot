@@ -1,7 +1,7 @@
 appname=Harness
 version=${VERSION}
 display_name=DeepSeek Harness
-desc="""<p>🐋DeepSeek Harness懒人包。</p><p>⭐使用说明：安装后需在应用设置添加工作区目录的权限。Harness需要HTTPS访问。</p>"""
+desc="""<p>🐋DeepSeek Harness懒人包。</p><p>⭐使用说明：Harness需开启HTTPS访问。安装后需在应用设置添加工作区目录的权限，默认工作区目录为“应用文件/Harness”。</p>"""
 platform=${PLATFORM}
 source=thirdparty
 maintainer=DeepSeek
