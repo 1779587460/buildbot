@@ -17,6 +17,24 @@
       },
       {
         "type": "select",
+        "field": "proxy_https",
+        "label": "访问方式",
+        "rules": [],
+        "options": [
+          {
+            "label": "反向代理",
+            "value": "false"
+          },
+          {
+            "label": "https自签名",
+            "value": "true"
+          }
+        ],
+        "helpText": "自签名证书访问时请忽略不安全链接",
+        "initValue": "false"
+      },
+      {
+        "type": "select",
         "field": "proxy_mode",
         "label": "开启代理",
         "rules": [],
