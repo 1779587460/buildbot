@@ -1,5 +1,5 @@
 #!/bin/bash
-export PATH=${TRIM_APPDEST}/node/bin:$PATH
+export PATH=/var/apps/nodejs_v24/target/bin:$PATH
 export HOME="${TRIM_PKGVAR}"
 export PROXY_PORT="$port"
 LOG_FILE="${TRIM_PKGVAR}/info.log"
