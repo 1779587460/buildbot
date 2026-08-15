@@ -69,6 +69,11 @@ jobs:
           pnpm install
           pnpm run build
 
+      - name: 安装构建依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools build-essential
+
       - name: 构建landlock-run
         working-directory: server/native/landlock-run
         run: |
