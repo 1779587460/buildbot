@@ -2,7 +2,10 @@
 
 cd ${TRIM_APPDEST}
 tar -xzf server.tar.gz
-#tar -xzf node.tar.gz
 rm -f server.tar.gz
+
+if [ -d "${TRIM_PKGVAR}/.dsh" ]; then
+    mv "${TRIM_PKGVAR}/.dsh" "${TRIM_DATA_SHARE_PATHS%%:*}/"
+fi
 
 exit 0
