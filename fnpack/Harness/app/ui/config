@@ -10,7 +10,7 @@
       "protocol": "",
       "gatewayPrefix": "",
       "gatewaySocket": "",
-      "title": "Harness",
+      "title": "DeepSeek Harness",
       "icon": "images/icon_{0}.png",
       "type": "iframe",
       "port": "${port}",
