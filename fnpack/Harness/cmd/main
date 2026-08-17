@@ -14,8 +14,6 @@ fi
 
 LOG_FILE="${TRIM_PKGVAR}/info.log"
 PID_FILE="${TRIM_PKGVAR}/app.pid"
-PROXY_PID="${TRIM_PKGVAR}/proxy.pid"
-
 
 # write the command to start your program here 
 CMD="node --import tsx/esm apps/cli/src/bin.ts web"
@@ -35,9 +33,8 @@ start_process() {
     bash -c "${CMD}" >> ${LOG_FILE} 2>&1 &
     # write pid to pidfile
     printf "%s" "$!" > ${PID_FILE}
-    sleep 1s
+    sleep 2s
     node ${TRIM_APPDEST}/proxy.js 2>&1 &
-    printf "%s" "$!" > ${PROXY_PID}
     return 0
 }
 
@@ -46,7 +43,6 @@ stop_process() {
 
     if [ -r "${PID_FILE}" ]; then
         pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
-        proxy_pid=$(head -n 1 "${PROXY_PID}" | tr -d '[:space:]')
         
         log_msg "pid=${pid}"
         if ! check_process "${pid}"; then
@@ -57,15 +53,7 @@ stop_process() {
         fi
 
         log_msg "send TERM signal to PID:${pid}..."
-        kill -TERM ${pid} >> ${LOG_FILE} 2>&1
-        kill -TERM ${proxy_pid} >> ${LOG_FILE} 2>&1
-
-        local count=0
-        while check_process "${pid}" && [ $count -lt 10 ]; do
-            sleep 1
-            count=$((count + 1))
-            log_msg "waiting process terminal... (${count}s/10s)"
-        done
+        pkill -TERM -u Harness -x "MainThread" >> ${LOG_FILE} 2>&1
 
         if check_process "${pid}"; then
             log_msg "send KILL signal to PID:${pid}..."
@@ -76,7 +64,7 @@ stop_process() {
             log_msg "process killed... "
         fi
     fi
-    rm -f "${PID_FILE}" "${PROXY_PID}"
+    rm -f "${PID_FILE}"
     return 0
 }
 
