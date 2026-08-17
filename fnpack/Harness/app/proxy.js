@@ -6,10 +6,10 @@ const url = require('url');
 // ---------- 配置 ----------
 const TARGET_URL = 'http://127.0.0.1:3080';
 const PROXY_PORT = Number(process.env.PROXY_PORT) || 3079;
-const PROXY_HTTPS = process.env.PROXY_HTTPS === 'true';  // 默认 false（HTTP）
+const PROXY_HTTPS = process.env.PROXY_HTTPS === 'true';
 // --------------------------
 
-// ---------- 硬编码证书（PEM 格式） ----------
+// ---------- 硬编码证书（PEM） ----------
 const CERT_PEM = `-----BEGIN CERTIFICATE-----
 MIIDwDCCAqigAwIBAgIGEaAEszCfMA0GCSqGSIb3DQEBCwUAMHAxFjAUBgNVBAMT
 DTE5Mi4xNjguMS4xMDAxCzAJBgNVBAYTAkNOMRAwDgYDVQQIEwdCZWlqaW5nMRAw
@@ -67,8 +67,50 @@ const target = new URL(TARGET_URL);
 const targetHost = target.hostname;
 const targetPort = target.port || (target.protocol === 'https:' ? 443 : 80);
 
-// 定义请求处理函数（HTTP 和 HTTPS 共用）
-function requestHandler(req, res) {
+// ---------- 后端可用性检查 ----------
+/** 快速检查一次（超时 500ms） */
+function quickCheckBackend(timeout = 500) {
+  return new Promise((resolve, reject) => {
+    const socket = net.createConnection(targetPort, targetHost);
+    const timer = setTimeout(() => {
+      socket.destroy();
+      reject(new Error('Timeout'));
+    }, timeout);
+    socket.once('connect', () => {
+      clearTimeout(timer);
+      socket.destroy();
+      resolve();
+    });
+    socket.once('error', (err) => {
+      clearTimeout(timer);
+      socket.destroy();
+      reject(err);
+    });
+  });
+}
+
+/** 持续等待后端可用（用于 WebSocket） */
+async function waitForBackend(maxWaitMs = 10000) {
+  const start = Date.now();
+  let first = true;
+  while (Date.now() - start < maxWaitMs) {
+    try {
+      await quickCheckBackend(2000); // 每次检查2秒超时
+      if (first) console.log('[Proxy] Backend is available.');
+      return;
+    } catch (_) {
+      if (first) {
+        console.log('[Proxy] Backend not ready, waiting...');
+        first = false;
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
+  throw new Error(`Backend ${targetHost}:${targetPort} not available after ${maxWaitMs}ms`);
+}
+
+// ---------- 代理转发逻辑 ----------
+function forwardRequest(req, res) {
   const targetReqUrl = new URL(req.url, TARGET_URL);
   const options = {
     hostname: targetHost,
@@ -78,11 +120,8 @@ function requestHandler(req, res) {
     headers: { ...req.headers }
   };
 
-  ['sec-fetch-site']
-    .forEach(h => delete options.headers[h]);
-
+  ['sec-fetch-site'].forEach(h => delete options.headers[h]);
   options.headers.host = `${targetHost}:${targetPort}`;
-  // dsh-market 的同源校验要求 POST 的 Origin 与 Host 一致，否则 403 untrusted origin
   options.headers.origin = `http://${options.headers.host}`;
 
   const proxyReq = http.request(options, (proxyRes) => {
@@ -101,8 +140,47 @@ function requestHandler(req, res) {
   req.pipe(proxyReq);
 }
 
-// 定义 WebSocket 升级处理（两者相同）
-function upgradeHandler(req, socket, head) {
+// ---------- HTTP 请求处理 ----------
+async function requestHandler(req, res) {
+  // 快速检测后端（500ms 超时）
+  try {
+    await quickCheckBackend(500);
+    // 后端已就绪，直接转发
+    forwardRequest(req, res);
+  } catch (_) {
+    // 后端未启动，返回等待页面（自动刷新）
+    const url = req.url;
+    res.writeHead(200, {
+      'Content-Type': 'text/html',
+      'Refresh': `2; url=${url}`   // 每2秒刷新
+    });
+    res.end(`
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><title>服务启动中</title>
+      <style>body{font-family:sans-serif;text-align:center;padding:50px;}</style>
+      </head>
+      <body>
+        <h1>⏳ 服务正在启动中，请稍候...</h1>
+        <p>后端服务 ${targetHost}:${targetPort} 尚未就绪，页面将每隔2秒自动重试。</p>
+        <p><small>如果长时间无响应，请检查后端服务是否正常运行。</small></p>
+      </body>
+      </html>
+    `);
+  }
+}
+
+// ---------- WebSocket 升级处理 ----------
+async function upgradeHandler(req, socket, head) {
+  try {
+    await waitForBackend(10000);
+  } catch (err) {
+    console.error(`[Proxy WebSocket] ${err.message}`);
+    socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+    socket.destroy();
+    return;
+  }
+
   const targetReqUrl = new URL(req.url, TARGET_URL);
   targetReqUrl.protocol = 'ws:';
 
@@ -132,17 +210,11 @@ function upgradeHandler(req, socket, head) {
   });
 }
 
-// ---------- 根据环境变量决定协议 ----------
+// ---------- 创建服务器 ----------
 let server;
 if (PROXY_HTTPS) {
-  // 启用 HTTPS，使用硬编码证书
-  let sslOptions;
   try {
-    sslOptions = {
-      key: KEY_PEM,
-      cert: CERT_PEM,
-    };
-    server = https.createServer(sslOptions, requestHandler);
+    server = https.createServer({ key: KEY_PEM, cert: CERT_PEM }, requestHandler);
     console.log('🔒 HTTPS 模式已启用（使用内嵌证书）');
   } catch (err) {
     console.error(`❌ 证书格式异常: ${err.message}，将降级为 HTTP`);
