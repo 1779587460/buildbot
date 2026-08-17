@@ -107,7 +107,9 @@ jobs:
       - name: 安装依赖并构建
         working-directory: server
         run: |
-          pnpm install
+          # CI 下 pnpm 默认 --frozen-lockfile；我们构建期才合并 dshmarket 依赖，
+          # 上游锁文件没有它，必须 --no-frozen-lockfile 让其解析并更新锁文件
+          pnpm install --no-frozen-lockfile
           pnpm run build
 
       - name: 安装构建依赖
