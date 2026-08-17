@@ -1,7 +1,7 @@
 appname=Harness
 version=${VERSION}
 display_name=DeepSeek Harness
-desc="""<p>🐋DeepSeek Harness懒人包，内置插件市场。</p><p>⭐使用说明：Harness需开启HTTPS访问。默认工作区目录为“应用文件/Harness”，修改路径需在应用设置添加读写权限。</p>"""
+desc="""<p>🐋DeepSeek Harness懒人包，内置插件市场，支持一键安装插件。</p><p>⭐使用说明：Harness需开启HTTPS访问。默认工作区目录为“应用文件/Harness”，修改路径需在应用设置添加读写权限。环境错误或插件损坏运行可尝试删除.dsh目录后重启。</p>"""
 platform=${PLATFORM}
 source=thirdparty
 maintainer=DeepSeek
