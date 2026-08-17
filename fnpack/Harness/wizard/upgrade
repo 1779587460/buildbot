@@ -57,7 +57,7 @@
         "label": "代理地址",
         "rules": [],
         "options": [],
-        "initValue": "http://192.x.x.x:7890"
+        "initValue": "http://127.0.0.1:7890"
       }
     ]
   }
