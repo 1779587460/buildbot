@@ -49,50 +49,71 @@ jobs:
           fetch-depth: 1
           path: server
 
-      - name: 预置插件市场（把 dshmarket 合并进源码一起构建）
+      - name: 预置插件市场与 dsh-web-ui 全家桶（合并进源码一起构建）
         working-directory: server
         run: |
           set -euo pipefail
-          # 为什么不用 `pnpm dsh plugin --profile web add dshmarket`：
+          # 为什么不用 `pnpm dsh plugin --profile web add <pkg>`：
           # 它把 profile 写进 CI 机器自己的 $DSH_HOME（~/.dsh/profiles/web），
           # 打包时根本不在 server/ 里，端到端启动后自然不会生效。
-          # 改为源码级预置：dshmarket 成为安装依赖 + web profile 模板自带它，
-          # 首次启动即自动初始化出带市场的 web profile。
+          # 改为源码级预置：插件成为安装依赖 + web profile 模板自带它们，
+          # 首次启动即自动初始化出带市场与全部插件的 web profile；
+          # 升级用户的既有 profile 通过 INSTALLATION_OWNED 自动迁移。
           # 1) apps/cli 是运行时安装锚点（INSTALL_ANCHOR），依赖闭包随 pnpm install 进入 node_modules
           node - <<'NODE'
           const fs = require('fs')
           const p = 'apps/cli/package.json'
           const pkg = JSON.parse(fs.readFileSync(p, 'utf8'))
-          if (pkg.dependencies.dshmarket === undefined) {
-            pkg.dependencies.dshmarket = '^1.11.1'
-            fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n')
-            console.log('apps/cli/package.json += dshmarket ^1.11.1')
-          } else {
-            console.log('apps/cli/package.json already has dshmarket, skip')
+          const adds = { dshmarket: '^1.11.1', '@linxin666/dsh-web-ui-all': '^0.1.20' }
+          for (const [name, ver] of Object.entries(adds)) {
+            if (pkg.dependencies[name] === undefined) {
+              pkg.dependencies[name] = ver
+              console.log(`apps/cli/package.json += ${name} ${ver}`)
+            } else {
+              console.log(`apps/cli/package.json already has ${name}, skip`)
+            }
           }
+          fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n')
           NODE
-          # 2) web profile 模板带上 dshmarket；INSTALLATION_OWNED 记录旧模板，
-          #    让已存在（升级用户）的 web profile 在下次启动时自动迁移补上市场
+          # 2) web profile 模板带上两个插件包；INSTALLATION_OWNED 记录上一版模板
           node - <<'NODE'
           const fs = require('fs')
           const p = 'packages/boot/app-boot/src/profile.ts'
           let src = fs.readFileSync(p, 'utf8')
           const OLD_T = "  web: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'],"
-          const NEW_T = "  web: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'dshmarket'],"
+          const NEW_T = "  web: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'dshmarket', '@linxin666/dsh-web-ui-all'],"
           if (!src.includes(NEW_T)) {
             if (!src.includes(OLD_T)) throw new Error('web 模板字符串未找到，上游源码已变化，请人工核对 profile.ts')
             src = src.replace(OLD_T, NEW_T)
           }
           const OLD_O = 'const INSTALLATION_OWNED_PROFILE_TUPLES: Record<string, readonly string[]> = {\n  headless:'
-          const NEW_O = 'const INSTALLATION_OWNED_PROFILE_TUPLES: Record<string, readonly string[]> = {\n  web: [\'@deepseek-ai/dsh-base\', \'@deepseek-ai/dsh-web-app\'],\n  headless:'
-          if (!src.includes("web: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'],\n  headless:")) {
+          const NEW_O = 'const INSTALLATION_OWNED_PROFILE_TUPLES: Record<string, readonly string[]> = {\n  web: [\'@deepseek-ai/dsh-base\', \'@deepseek-ai/dsh-web-app\', \'dshmarket\'],\n  headless:'
+          if (!src.includes("web: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'dshmarket'],\n  headless:")) {
             if (!src.includes(OLD_O)) throw new Error('INSTALLATION_OWNED 表头未找到，上游源码已变化，请人工核对 profile.ts')
             src = src.replace(OLD_O, NEW_O)
           }
           fs.writeFileSync(p, src)
-          console.log('profile.ts: web 模板 + installation-owned 已加入 dshmarket')
+          console.log('profile.ts: web 模板 += dshmarket, @linxin666/dsh-web-ui-all')
           NODE
-          grep -n "dshmarket" apps/cli/package.json packages/boot/app-boot/src/profile.ts
+          # 3) pnpm-workspace.yaml：dsh-web-ui 全家桶引入的构建脚本需要放行
+          #    （ssh2/cpu-features 原生构建、cloudflared 下载二进制），
+          #    否则 harness 的 allowBuilds 策略会让 pnpm install 硬失败
+          node - <<'NODE'
+          const fs = require('fs')
+          const p = 'pnpm-workspace.yaml'
+          let w = fs.readFileSync(p, 'utf8')
+          if (!w.includes('ssh2: true')) {
+            const anchor = w.includes('minimumReleaseAgeExclude:') ? 'minimumReleaseAgeExclude:' : 'patchedDependencies:'
+            if (!w.includes(anchor)) throw new Error('pnpm-workspace.yaml 锚点未找到，上游已变化，请人工核对')
+            w = w.replace(anchor, '  ssh2: true\n  cpu-features: true\n  cloudflared: true\n' + anchor)
+            fs.writeFileSync(p, w)
+            console.log('pnpm-workspace.yaml allowBuilds += ssh2, cpu-features, cloudflared')
+          } else {
+            console.log('pnpm-workspace.yaml already has allowBuilds entries, skip')
+          }
+          NODE
+          grep -n "dshmarket\|@linxin666/dsh-web-ui-all" apps/cli/package.json packages/boot/app-boot/src/profile.ts
+          grep -n "ssh2: true\|cpu-features: true\|cloudflared: true" pnpm-workspace.yaml
 
       - name: 安装 Node.js 24
         uses: actions/setup-node@v7
@@ -122,12 +143,12 @@ jobs:
         run: |
           pnpm run build:native
 
-      - name: 验证插件市场已随安装打包
+      - name: 验证插件已随安装打包
         working-directory: server
         run: |
           set -euo pipefail
-          node -e "const { createRequire } = require('module'); const r = createRequire(process.cwd() + '/apps/cli/package.json'); const p = r.resolve('dshmarket/package.json'); console.log('OK dshmarket 从安装锚点可解析:', p)"
-          node -e "const fs=require('fs'); const s=fs.readFileSync('packages/boot/app-boot/src/profile.ts','utf8'); if(!s.includes(\"dshmarket\")) { console.error('web 模板未包含 dshmarket'); process.exit(1) } console.log('OK web profile 模板已预置 dshmarket')"
+          node -e "const { createRequire } = require('module'); const r = createRequire(process.cwd() + '/apps/cli/package.json'); for (const n of ['dshmarket', '@linxin666/dsh-web-ui-all']) { const p = r.resolve(n + '/package.json'); console.log('OK 可解析:', n, '->', p) }"
+          node -e "const fs=require('fs'); const s=fs.readFileSync('packages/boot/app-boot/src/profile.ts','utf8'); if(!s.includes('dshmarket') || !s.includes('@linxin666/dsh-web-ui-all')) { console.error('web 模板未包含预置插件'); process.exit(1) } console.log('OK web profile 模板已预置 dshmarket + @linxin666/dsh-web-ui-all')"
 
       - name: 清理源码（移除.github）
         working-directory: server
