@@ -78,10 +78,12 @@ function requestHandler(req, res) {
     headers: { ...req.headers }
   };
 
-  ['origin', 'sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest']
+  ['sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest']
     .forEach(h => delete options.headers[h]);
 
   options.headers.host = `${targetHost}:${targetPort}`;
+  // dsh-market 的同源校验要求 POST 的 Origin 与 Host 一致，否则 403 untrusted origin
+  options.headers.origin = `http://${options.headers.host}`;
 
   const proxyReq = http.request(options, (proxyRes) => {
     const headers = { ...proxyRes.headers };
