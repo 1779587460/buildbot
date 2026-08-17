@@ -78,7 +78,7 @@ function requestHandler(req, res) {
     headers: { ...req.headers }
   };
 
-  ['sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest']
+  ['sec-fetch-site']
     .forEach(h => delete options.headers[h]);
 
   options.headers.host = `${targetHost}:${targetPort}`;
