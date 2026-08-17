@@ -1,6 +1,7 @@
 #!/bin/bash
 export PATH=/var/apps/nodejs_v24/target/bin:$PATH
 export HOME="${TRIM_DATA_SHARE_PATHS%%:*}"
+export PNPM_HOME="${TRIM_PKGVAR}/pnpm"
 export PROXY_PORT="$port"
 export PROXY_HTTPS="$proxy_https"
 if [ "$proxy_mode" = "1" ];then
