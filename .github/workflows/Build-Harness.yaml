@@ -73,13 +73,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools build-essential
           
-      - name: 创建 landlock-run 目录
-        run: mkdir -p server/native/landlock-run
+    #  - name: 创建 landlock-run 目录
+    #    run: mkdir -p server/native/landlock-run
         
-      - name: 构建 landlock-run
-        working-directory: server/native/landlock-run
-        run: |
-          pnpm run build:native
+   #   - name: 构建 landlock-run
+  #      working-directory: server/native/landlock-run
+  #         pnpm run build:native
 
       - name: 验证插件市场已随安装打包
         working-directory: server
