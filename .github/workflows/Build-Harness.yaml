@@ -16,6 +16,11 @@ on:
         required: false
         type: boolean
         default: true
+      plugins:
+        description: '要预置的插件列表（逗号分隔，例如 dshmarket,myplugin）'
+        required: false
+        type: string
+        default: 'dshmarket'
 
 jobs:
   build:
@@ -42,58 +47,6 @@ jobs:
           echo "manifest_version=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
           echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
 
-      - name: 检出 deepseek-harness 源码
-        uses: actions/checkout@v7
-        with:
-          repository: deepseek-ai/deepseek-harness
-          fetch-depth: 1
-          path: server
-
-      - name: 预置插件市场（把 dshmarket 合并进源码一起构建）
-        working-directory: server
-        run: |
-          set -euo pipefail
-          # 为什么不用 `pnpm dsh plugin --profile web add dshmarket`：
-          # 它把 profile 写进 CI 机器自己的 $DSH_HOME（~/.dsh/profiles/web），
-          # 打包时根本不在 server/ 里，端到端启动后自然不会生效。
-          # 改为源码级预置：dshmarket 成为安装依赖 + web profile 模板自带它，
-          # 首次启动即自动初始化出带市场的 web profile。
-          # 1) apps/cli 是运行时安装锚点（INSTALL_ANCHOR），依赖闭包随 pnpm install 进入 node_modules
-          node - <<'NODE'
-          const fs = require('fs')
-          const p = 'apps/cli/package.json'
-          const pkg = JSON.parse(fs.readFileSync(p, 'utf8'))
-          if (pkg.dependencies.dshmarket === undefined) {
-            pkg.dependencies.dshmarket = '^1.11.1'
-            fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n')
-            console.log('apps/cli/package.json += dshmarket ^1.11.1')
-          } else {
-            console.log('apps/cli/package.json already has dshmarket, skip')
-          }
-          NODE
-          # 2) web profile 模板带上 dshmarket；INSTALLATION_OWNED 记录旧模板，
-          #    让已存在（升级用户）的 web profile 在下次启动时自动迁移补上市场
-          node - <<'NODE'
-          const fs = require('fs')
-          const p = 'packages/boot/app-boot/src/profile.ts'
-          let src = fs.readFileSync(p, 'utf8')
-          const OLD_T = "  web: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'],"
-          const NEW_T = "  web: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'dshmarket'],"
-          if (!src.includes(NEW_T)) {
-            if (!src.includes(OLD_T)) throw new Error('web 模板字符串未找到，上游源码已变化，请人工核对 profile.ts')
-            src = src.replace(OLD_T, NEW_T)
-          }
-          const OLD_O = 'const INSTALLATION_OWNED_PROFILE_TUPLES: Record<string, readonly string[]> = {\n  headless:'
-          const NEW_O = 'const INSTALLATION_OWNED_PROFILE_TUPLES: Record<string, readonly string[]> = {\n  web: [\'@deepseek-ai/dsh-base\', \'@deepseek-ai/dsh-web-app\'],\n  headless:'
-          if (!src.includes("web: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'],\n  headless:")) {
-            if (!src.includes(OLD_O)) throw new Error('INSTALLATION_OWNED 表头未找到，上游源码已变化，请人工核对 profile.ts')
-            src = src.replace(OLD_O, NEW_O)
-          }
-          fs.writeFileSync(p, src)
-          console.log('profile.ts: web 模板 + installation-owned 已加入 dshmarket')
-          NODE
-          grep -n "dshmarket" apps/cli/package.json packages/boot/app-boot/src/profile.ts
-
       - name: 安装 Node.js 24
         uses: actions/setup-node@v7
         with:
@@ -104,14 +57,108 @@ jobs:
           corepack enable
           corepack prepare pnpm@latest --activate
 
-      - name: 安装依赖并构建
+      # ===== 以下为从 npm 构建并预置插件的独立步骤 =====
+      - name: 初始化 server 目录并下载 @deepseek-ai/dsh
+        run: |
+          mkdir -p server
+          cd server
+          echo '{}' > package.json
+          pnpm init -y > /dev/null 2>&1
+          npm pack @deepseek-ai/dsh
+          DSH_TGZ=$(ls -t deepseek-ai-dsh-*.tgz | head -1)
+          echo "下载的包：$DSH_TGZ"
+          mkdir -p dsh-pkg
+          tar -xf "$DSH_TGZ" -C dsh-pkg
+          echo "DSH_TGZ=$DSH_TGZ" >> $GITHUB_ENV
+
+      - name: 修改 package.json 添加插件依赖
         working-directory: server
         run: |
-          # CI 下 pnpm 默认 --frozen-lockfile；我们构建期才合并 dshmarket 依赖，
-          # 上游锁文件没有它，必须 --no-frozen-lockfile 让其解析并更新锁文件
-          pnpm install --no-frozen-lockfile
-          pnpm run build
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { execSync } = require('child_process');
 
+          const pluginsInput = '${{ github.event.inputs.plugins }}';
+          const pluginNames = [...new Set(pluginsInput.split(',').map(s => s.trim()).filter(Boolean))];
+          if (pluginNames.length === 0) {
+            console.log('未指定插件，跳过修改');
+            process.exit(0);
+          }
+          console.log(`要添加的插件: ${pluginNames.join(', ')}`);
+
+          const pkgPath = path.join('dsh-pkg', 'package', 'package.json');
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+          pkg.dependencies ??= {};
+
+          for (const name of pluginNames) {
+            let version;
+            try {
+              version = execSync(`npm view ${name} version`, { encoding: 'utf8' }).trim();
+            } catch {
+              version = 'latest';
+            }
+            const depVer = `^${version}`;
+            pkg.dependencies[name] = depVer;
+            console.log(`  添加 ${name}@${depVer}`);
+          }
+          fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+          console.log('✅ package.json 修改完成');
+          NODE
+
+      - name: 重新打包修改后的 @deepseek-ai/dsh
+        working-directory: server
+        run: |
+          cd dsh-pkg/package
+          npm pack
+          NEW_TGZ=$(ls -t *.tgz | head -1)
+          mv "$NEW_TGZ" ../../
+          echo "NEW_TGZ=$NEW_TGZ" >> $GITHUB_ENV
+
+      - name: 安装修改后的包（使用 npm install）
+        working-directory: server
+        run: |
+          npm install "./${{ env.NEW_TGZ }}"
+
+      - name: 修改 index.js 将插件加入 web 数组
+        working-directory: server
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const pluginsInput = '${{ github.event.inputs.plugins }}';
+          const pluginNames = [...new Set(pluginsInput.split(',').map(s => s.trim()).filter(Boolean))];
+          if (pluginNames.length === 0) {
+            console.log('未指定插件，跳过 index.js 修改');
+            process.exit(0);
+          }
+
+          const indexPath = path.join('node_modules', '@deepseek-ai', 'dsh-app-boot', 'lib', 'index.js');
+          if (!fs.existsSync(indexPath)) {
+            console.error(`index.js 不存在: ${indexPath}`);
+            process.exit(1);
+          }
+          let code = fs.readFileSync(indexPath, 'utf8');
+
+          const webRegex = /web:\s*\[\s*(["']@deepseek-ai\/dsh-base["']\s*,\s*["']@deepseek-ai\/dsh-web-app["']\s*)(?:,\s*[^\]]*)?\]/;
+          if (webRegex.test(code)) {
+            code = code.replace(webRegex, (match, basePart) => {
+              const existingPlugins = match.match(/,\s*(["'])(.*?)\1/g) || [];
+              const existingNames = existingPlugins.map(s => s.replace(/,\s*["']|["']/g, '').trim()).filter(n => n && !n.includes('@deepseek-ai/dsh-base') && !n.includes('@deepseek-ai/dsh-web-app'));
+              const all = [...new Set([...existingNames, ...pluginNames])];
+              const newItems = ['"@deepseek-ai/dsh-base"', '"@deepseek-ai/dsh-web-app"', ...all.map(p => `"${p}"`)];
+              return `web: [${newItems.join(', ')}]`;
+            });
+            fs.writeFileSync(indexPath, code);
+            console.log(`✅ 已更新 ${indexPath}，插件列表: ${pluginNames.join(', ')}`);
+          } else {
+            console.error('未找到 web 模板，请检查 index.js');
+            process.exit(1);
+          }
+          NODE
+
+      # ===== 回到原有步骤 =====
       - name: 安装构建依赖
         run: |
           sudo apt-get update
@@ -126,8 +173,15 @@ jobs:
         working-directory: server
         run: |
           set -euo pipefail
-          node -e "const { createRequire } = require('module'); const r = createRequire(process.cwd() + '/apps/cli/package.json'); const p = r.resolve('dshmarket/package.json'); console.log('OK dshmarket 从安装锚点可解析:', p)"
-          node -e "const fs=require('fs'); const s=fs.readFileSync('packages/boot/app-boot/src/profile.ts','utf8'); if(!s.includes(\"dshmarket\")) { console.error('web 模板未包含 dshmarket'); process.exit(1) } console.log('OK web profile 模板已预置 dshmarket')"
+          PLUGINS="${{ github.event.inputs.plugins }}"
+          IFS=',' read -ra PKGS <<< "$PLUGINS"
+          for pkg in "${PKGS[@]}"; do
+            pkg=$(echo "$pkg" | xargs)
+            if [ -n "$pkg" ]; then
+              node -e "const { createRequire } = require('module'); const r = createRequire(process.cwd() + '/package.json'); const p = r.resolve('$pkg/package.json'); console.log('OK $pkg 可解析:', p)"
+            fi
+          done
+          node -e "const fs=require('fs'); const s=fs.readFileSync('node_modules/@deepseek-ai/dsh-app-boot/lib/index.js','utf8'); const plugins='${{ github.event.inputs.plugins }}'.split(',').map(p=>p.trim()).filter(Boolean); for (const p of plugins) { if (!s.includes('\"'+p+'\"')) { console.error('index.js 未包含插件 '+p); process.exit(1) } } console.log('OK 所有插件已预置在 index.js')"
 
       - name: 清理源码
         working-directory: server
