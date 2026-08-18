@@ -16,7 +16,7 @@ jobs:
       - name: Install in server directory
         run: |
           mkdir -p server
-          npx --prefix server @deepseek-ai/dsh web
+          npx --prefix server -y @deepseek-ai/dsh web
 
       - name: Compress server directory
         run: tar -czf server.tar.gz server
