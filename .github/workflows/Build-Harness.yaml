@@ -57,8 +57,8 @@ jobs:
           corepack enable
           corepack prepare pnpm@latest --activate
 
-      # ===== 第一步：下载并解压 @deepseek-ai/dsh（带重试和 registry） =====
-      - name: 初始化 server 目录并下载 @deepseek-ai/dsh
+      # ===== 增强的第一步：下载并解压 @deepseek-ai/dsh =====
+      - name: 下载并解压 @deepseek-ai/dsh（带诊断）
         run: |
           set -euo pipefail
           mkdir -p server
@@ -66,19 +66,37 @@ jobs:
           echo '{}' > package.json
           pnpm init -y > /dev/null 2>&1
 
-          # 尝试下载包，最多重试2次
-          for i in {1..2}; do
-            echo "尝试下载 @deepseek-ai/dsh (第 $i 次)..."
-            if npm pack @deepseek-ai/dsh --registry=https://registry.npmjs.org; then
-              break
-            fi
-            if [ $i -eq 2 ]; then
-              echo "错误：两次尝试 npm pack 均失败"
+          # 1) 检查包是否存在（使用官方 registry）
+          echo "=== 检查包 @deepseek-ai/dsh 是否存在 ==="
+          if npm view @deepseek-ai/dsh version --registry=https://registry.npmjs.org &>/dev/null; then
+            echo "✅ 包存在"
+          else
+            echo "❌ 包不存在或无法访问，尝试淘宝镜像..."
+            if npm view @deepseek-ai/dsh version --registry=https://registry.npmmirror.com &>/dev/null; then
+              echo "✅ 包在淘宝镜像存在"
+            else
+              echo "错误：包 @deepseek-ai/dsh 在官方和镜像均不存在，请检查包名是否正确"
               exit 1
             fi
-            echo "下载失败，等待5秒后重试..."
-            sleep 5
+          fi
+
+          # 2) 尝试使用多个 registry 下载
+          REGISTRIES=("https://registry.npmjs.org" "https://registry.npmmirror.com")
+          DOWNLOADED=false
+          for reg in "${REGISTRIES[@]}"; do
+            echo "尝试从 $reg 下载..."
+            if npm pack @deepseek-ai/dsh --registry="$reg" --verbose; then
+              DOWNLOADED=true
+              break
+            else
+              echo "从 $reg 下载失败，继续尝试..."
+            fi
           done
+
+          if [ "$DOWNLOADED" = false ]; then
+            echo "错误：所有 registry 均下载失败"
+            exit 1
+          fi
 
           DSH_TGZ=$(ls -t deepseek-ai-dsh-*.tgz 2>/dev/null | head -1)
           if [ -z "$DSH_TGZ" ]; then
@@ -177,7 +195,6 @@ jobs:
           }
           NODE
 
-      # ===== 以下为原有步骤（不变） =====
       - name: 安装构建依赖
         run: |
           sudo apt-get update
