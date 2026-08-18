@@ -211,13 +211,13 @@ jobs:
           # 不能用 pnpm prune --prod：本机实测发现带 lefthook postinstall 时它会在
           # 无 TTY 环境抛 ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY 并整体清空 store（1.5G→100K）。
           # 改为删 node_modules + 重新 install --prod 最干净。
-          rm -rf node_modules
-          CI=true pnpm install --prod \
-            --no-frozen-lockfile \
-            --config.confirmModulesPurge=false \
-            --config.dangerouslyAllowAllBuilds=true \
-            --config.minimumReleaseAge=0 \
-            --config.strictDepBuilds=false
+       #   rm -rf node_modules
+        #  CI=true pnpm install --prod \
+        #    --no-frozen-lockfile \
+         #   --config.confirmModulesPurge=false \
+         #   --config.dangerouslyAllowAllBuilds=true \
+          #  --config.minimumReleaseAge=0 \
+           # --config.strictDepBuilds=false
 
       - name: 压缩 server 目录
         run: |
