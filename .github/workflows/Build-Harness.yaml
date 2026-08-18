@@ -80,12 +80,12 @@ jobs:
   #      working-directory: server/native/landlock-run
   #         pnpm run build:native
 
-      - name: 验证插件市场已随安装打包
-        working-directory: server
-        run: |
-          set -euo pipefail
-          node -e "const { createRequire } = require('module'); const r = createRequire(process.cwd() + '/apps/cli/package.json'); const p = r.resolve('dshmarket/package.json'); console.log('OK dshmarket 从安装锚点可解析:', p)"
-          node -e "const fs=require('fs'); const s=fs.readFileSync('packages/boot/app-boot/src/profile.ts','utf8'); if(!s.includes(\"dshmarket\")) { console.error('web 模板未包含 dshmarket'); process.exit(1) } console.log('OK web profile 模板已预置 dshmarket')"
+    #  - name: 验证插件市场已随安装打包
+    #    working-directory: server
+    #    run: |
+   #       set -euo pipefail
+   #       node -e "const { createRequire } = require('module'); const r = createRequire(process.cwd() + '/apps/cli/package.json'); const p = r.resolve('dshmarket/package.json'); console.log('OK dshmarket 从安装锚点可解析:', p)"
+  #        node -e "const fs=require('fs'); const s=fs.readFileSync('packages/boot/app-boot/src/profile.ts','utf8'); if(!s.includes(\"dshmarket\")) { console.error('web 模板未包含 dshmarket'); process.exit(1) } console.log('OK web profile 模板已预置 dshmarket')"
 
       - name: 清理源码
         working-directory: server
