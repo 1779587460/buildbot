@@ -72,7 +72,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools build-essential
 
-      - name: 构建landlock-run
+      - name: 构建 landlock-run
         working-directory: server/native/landlock-run
         run: |
           pnpm run build:native
@@ -81,23 +81,145 @@ jobs:
         working-directory: server
         run: |
           set -euo pipefail
-          PLUGINS="${{ github.event.inputs.plugins }}"
-          IFS=',' read -ra PKGS <<< "$PLUGINS"
-          for pkg in "${PKGS[@]}"; do
-            pkg=$(echo "$pkg" | xargs)
-            if [ -n "$pkg" ]; then
-              node -e "const { createRequire } = require('module'); const r = createRequire(process.cwd() + '/package.json'); const p = r.resolve('$pkg/package.json'); console.log('OK $pkg 可解析:', p)"
-            fi
-          done
-          node -e "const fs=require('fs'); const s=fs.readFileSync('node_modules/@deepseek-ai/dsh-app-boot/lib/index.js','utf8'); const plugins='${{ github.event.inputs.plugins }}'.split(',').map(p=>p.trim()).filter(Boolean); for (const p of plugins) { if (!s.includes('\"'+p+'\"')) { console.error('index.js 未包含插件 '+p); process.exit(1) } } console.log('OK 所有插件已预置在 index.js')"
+          node -e "const { createRequire } = require('module'); const r = createRequire(process.cwd() + '/apps/cli/package.json'); const p = r.resolve('dshmarket/package.json'); console.log('OK dshmarket 从安装锚点可解析:', p)"
+          node -e "const fs=require('fs'); const s=fs.readFileSync('packages/boot/app-boot/src/profile.ts','utf8'); if(!s.includes(\"dshmarket\")) { console.error('web 模板未包含 dshmarket'); process.exit(1) } console.log('OK web profile 模板已预置 dshmarket')"
 
       - name: 清理源码
         working-directory: server
         run: rm -rf .github .git *.md
 
-      - name: 压缩 server目录
+      - name: 裁剪发布物中生产环境用不到的构建残留
+        working-directory: server
+        run: |
+          set -euo pipefail
+
+          # ─ 波次 1：顶层开发期配置文件 ─
+          rm -f \
+            .gitlab-ci.yml .jscpd.json .oxlintrc.json .oxlintrc.staged.json \
+            .rgignore .editorconfig lefthook.yml pytest.ini \
+            knip.json CONTRIBUTING.i18n.yaml README.i18n.yaml \
+            tsconfig.client.tsbuildinfo tsconfig.host.tsbuildinfo \
+            vitest.config.ts vitest.e2e.config.ts vitest.snapshot.config.ts \
+            vitest.web.config.ts vitest.web.perf.config.ts vitest.web-stress.config.ts \
+            vitest.shared.ts
+
+          # ─ 波次 2：顶层非运行时目录（保留 vendor/ 与 native/） ─
+          rm -rf docs examples website assets scripts python .agents .claude
+
+          # ─ 波次 3：每个 workspace member 仅留 lib/dist/package.json/*.d.ts ─
+          find packages apps -type d \( -name src -o -name tests -o -name __tests__ \) -prune -exec rm -rf {} +
+          find packages apps -type f \( -name "*.ts" ! -name "*.d.ts" \) -delete
+          find packages apps -maxdepth 4 -name "tsconfig.json" -delete
+          find packages apps -name "tsconfig.tsbuildinfo" -delete
+          find packages apps -maxdepth 4 -name "tsdown.config.ts" -delete
+
+          # ─ 波次 4：删除不被运行时闭包引用的 dev-only workspace member ─
+          # 动态计算（不写死列表，避免上游源码升级漏一个 member 而导致 pnpm install
+          # 解析时 hard-fail "找不到 workspace 包"）。逻辑：
+          #   1) 枚举 packages/apps/vendor/native 下所有 member（name -> dir）
+          #   2) 从 @deepseek-ai/dsh (= apps/cli) 出发，按 dependencies /
+          #      optionalDependencies / peerDependencies 递归标记 used
+          #   3) 剩下的 unused 全部 rm -rf
+          # 不能删的两类：
+          #   - landlock 系列（native/landlock-run 与 native/landlock-run/packages/*）：
+          #     其 package.json name 是 ...-workspace / 名字带 -linux-x64 等，
+          #     探测的 name 映射机制不识别，且它本身是 prod 必需的 native binding
+          #   - fixture 子包：路径含 /fixtures/ 或 /tests/，不算真 member
+          node - <<'NODE'
+          const fs = require('fs'), path = require('path')
+          function readP(p) { try { return JSON.parse(fs.readFileSync(p, 'utf8')) } catch { return null } }
+          const allMembers = new Map()
+          function collect(dir) {
+            if (!fs.existsSync(dir)) return
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+              if (!e.isDirectory() || e.name === 'node_modules' || e.name === '.git' ||
+                  e.name === 'fixtures' || e.name === 'tests') continue
+              const sub = path.join(dir, e.name)
+              const pj = path.join(sub, 'package.json')
+              if (fs.existsSync(pj)) {
+                const p = readP(pj)
+                if (p && p.name) allMembers.set(p.name, sub)
+              }
+              collect(sub)
+            }
+          }
+          for (const r of ['packages', 'apps', 'vendor', 'native']) collect(r)
+
+          const used = new Set()
+          function visit(name) {
+            if (used.has(name)) return
+            used.add(name)
+            const dir = allMembers.get(name)
+            if (!dir) return
+            const p = readP(path.join(dir, 'package.json'))
+            if (!p) return
+            for (const k of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
+              if (!p[k]) continue
+              for (const dep in p[k]) if (allMembers.has(dep)) visit(dep)
+            }
+          }
+          visit('@deepseek-ai/dsh')
+
+          let removed = 0
+          for (const [name, dir] of allMembers) {
+            if (used.has(name)) continue
+            if (dir.includes('/fixtures/') || dir.includes('/tests/')) continue
+            if (name.includes('landlock-run-workspace') || dir.startsWith('native/landlock-run/packages/')) continue
+            fs.rmSync(dir, { recursive: true, force: true })
+            removed++
+            console.log('rm unused member:', dir, '[' + name + ']')
+          }
+          console.log('wave4: removed ' + removed + ' unused workspace members')
+          NODE
+
+
+          # ─ 波次 5：清根/各 member 的 scripts 与 devDependencies ─
+          node - <<'NODE'
+          const fs = require('fs'), path = require('path')
+          {
+            const p = './package.json'
+            const pkg = JSON.parse(fs.readFileSync(p, 'utf8'))
+            pkg.scripts = {}
+            delete pkg.devDependencies
+            fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n')
+            console.log('根 package.json: 清空 scripts + 删除 devDependencies')
+          }
+          function stripMember(dir) {
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+              if (!e.isDirectory() || e.name === 'node_modules' || e.name === '.git') continue
+              const sub = path.join(dir, e.name)
+              const pj = path.join(sub, 'package.json')
+              if (fs.existsSync(pj)) {
+                const pkg = JSON.parse(fs.readFileSync(pj, 'utf8'))
+                let touched = false
+                if (pkg.scripts && Object.keys(pkg.scripts).length) { pkg.scripts = {}; touched = true }
+                if (pkg.devDependencies) { delete pkg.devDependencies; touched = true }
+                if (touched) fs.writeFileSync(pj, JSON.stringify(pkg, null, 2) + '\n')
+              }
+              stripMember(sub)
+            }
+          }
+          for (const root of ['packages', 'apps', 'vendor']) {
+            if (fs.existsSync(root)) stripMember(root)
+          }
+          NODE
+
+          # ─ 波次 6：从干净状态重装 prod-only 闭包 ─
+          # 不能用 pnpm prune --prod：本机实测发现带 lefthook postinstall 时它会在
+          # 无 TTY 环境抛 ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY 并整体清空 store（1.5G→100K）。
+          # 改为删 node_modules + 重新 install --prod 最干净。
+          rm -rf node_modules
+          CI=true pnpm install --prod \
+            --no-frozen-lockfile \
+            --config.confirmModulesPurge=false \
+            --config.dangerouslyAllowAllBuilds=true \
+            --config.minimumReleaseAge=0 \
+            --config.strictDepBuilds=false
+
+      - name: 压缩 server 目录
         run: |
           tar -czf server.tar.gz server
+          ls -lh server.tar.gz
 
       - name: 检出 buildbot 仓库（包含 fnpack 模板）
         uses: actions/checkout@v7
@@ -152,6 +274,7 @@ jobs:
           echo "打包完成，生成文件：$FINAL_NAME"
           ls -la *.fpk
 
+      # 测试运行时上传 fpk 到 Artifact，与 publish 解耦：取消 publish 也仍能在 Action UI 下载 fpk
       - name: 上传 fpk 文件作为 Artifact
         uses: actions/upload-artifact@v7
         with:
@@ -162,6 +285,7 @@ jobs:
   publish:
     name: 发布到 Fndepot Release
     needs: build
+    # publish 开关继承自生产 yaml；测试时在 UI 上取消勾选即仅构建 + 输出 fpk Artifact，不发布
     if: always() && needs.build.result == 'success' && github.event.inputs.publish == 'true'
     runs-on: ubuntu-24.04
     steps:
@@ -178,11 +302,11 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "RELEASE_TITLE=【$TAG 更新】" >> $GITHUB_OUTPUT
 
-      - name: 使用 GitHub CLI 发布到 shuangji66/Fndepot
+      - name: 使用 GitHub CLI 发布到 1779587460/Fndepot
         env:
           GH_TOKEN: ${{ secrets.BUILDBOT }}
         run: |
-          REPO="shuangji66/Fndepot"
+          REPO="1779587460/Fndepot"
           TAG="${{ steps.date_tag.outputs.tag }}"
           TITLE="${{ steps.date_tag.outputs.RELEASE_TITLE }}"
           MANIFEST_VERSION="${{ needs.build.outputs.manifest_version }}"
@@ -211,7 +335,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BUILDBOT }}
         run: |
-          REPO="shuangji66/Fndepot"
+          REPO="1779587460/Fndepot"
           TAG="${{ steps.date_tag.outputs.tag }}"
           APP_NAME="${{ needs.build.outputs.app_name }}"
           MANIFEST_VERSION="${{ needs.build.outputs.manifest_version }}"
@@ -238,5 +362,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add fnpack.json
+          git commit -m "chore: update ${APP_NAME} to ${MANIFEST_VERSION} (${TAG})"
+          git push          git add fnpack.json
           git commit -m "chore: update ${APP_NAME} to ${MANIFEST_VERSION} (${TAG})"
           git push
