@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       publish:
-        description: '是否发布到 Fndepot Release'
+        description: '是否发布到 Fndepot Release（测试时取消勾选即可只构建不发布）'
         required: false
         type: boolean
         default: true
@@ -117,7 +117,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y musl-tools build-essential
 
-      - name: 构建landlock-run
+      - name: 构建 landlock-run
         working-directory: server/native/landlock-run
         run: |
           pnpm run build:native
@@ -129,13 +129,145 @@ jobs:
           node -e "const { createRequire } = require('module'); const r = createRequire(process.cwd() + '/apps/cli/package.json'); const p = r.resolve('dshmarket/package.json'); console.log('OK dshmarket 从安装锚点可解析:', p)"
           node -e "const fs=require('fs'); const s=fs.readFileSync('packages/boot/app-boot/src/profile.ts','utf8'); if(!s.includes(\"dshmarket\")) { console.error('web 模板未包含 dshmarket'); process.exit(1) } console.log('OK web profile 模板已预置 dshmarket')"
 
-      - name: 清理源码
+      - name: 清理源码（仅清 git 与仓库元数据；保留源码供官方 release:pack 使用）
         working-directory: server
         run: rm -rf .github .git *.md
 
-      - name: 压缩 server目录
+      - name: 官方 release:pack —— 打全部 npm tarball（dsh + vendor + landlock）
+        working-directory: server
         run: |
-          tar -czf server.tar.gz server
+          set -euo pipefail
+          # GitHub Actions 自动设 CI=true，规避 pnpm 的
+          # ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY；显式设双保险。
+          export CI=true
+          # dsh family：packages/*/* + apps/* 全部统一版本
+          pnpm run release:pack --family dsh --out dist/npm
+          # vendor family：dsh 包把 vendored framework 声明为 peer，
+          # npm flat install 需要它同目录交付
+          pnpm run release:pack --family vendor --out dist/npm-vendor
+          # landlock entry（dsh-sandbox-local 运行时依赖的 native binding 来源）
+          pnpm --dir native/landlock-run run build:ts
+          pnpm --dir native/landlock-run/packages/entry pack --pack-destination dist/npm-landlock
+          echo "=== pack 产出统计 ==="
+          echo "dsh tarball:    $(ls dist/npm/*.tgz 2>/dev/null | wc -l)"
+          echo "vendor tarball: $(ls dist/npm-vendor/*.tgz 2>/dev/null | wc -l)"
+          echo "landlock tarball: $(ls dist/npm-landlock/*.tgz 2>/dev/null | wc -l)"
+
+      - name: 组装 server2 扁平 node_modules（按 dsh 闭包挑 tarball，npm install）
+        working-directory: server
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+          const { execFileSync } = require('child_process')
+          function readP(p) { try { return JSON.parse(fs.readFileSync(p, 'utf8')) } catch { return null } }
+          // —— 1) 计算 dsh 运行时闭包 member（含 vendor 的 peer）——
+          const allMembers = new Map() // name -> dir
+          function collect(dir) {
+            if (!fs.existsSync(dir)) return
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+              if (!e.isDirectory() || e.name === 'node_modules' || e.name === '.git') continue
+              const sub = path.join(dir, e.name)
+              const pj = path.join(sub, 'package.json')
+              if (fs.existsSync(pj)) { const p = readP(pj); if (p && p.name) allMembers.set(p.name, sub) }
+              collect(sub)
+            }
+          }
+          for (const r of ['packages', 'apps', 'vendor', 'native']) collect(r)
+          const used = new Set()
+          function visit(name) {
+            if (used.has(name)) return
+            used.add(name)
+            const dir = allMembers.get(name)
+            if (!dir) return
+            const p = readP(path.join(dir, 'package.json'))
+            if (!p) return
+            for (const k of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
+              if (!p[k]) continue
+              for (const dep in p[k]) if (allMembers.has(dep)) visit(dep)
+            }
+          }
+          visit('@deepseek-ai/dsh')
+          const closureNames = new Set([...used].filter(n => allMembers.has(n)))
+          console.log('dsh 闭包 member 数:', closureNames.size)
+          // —— 2) 收集 pack 产物里所有 tarball -> {name,url} ——
+          const tarballOf = new Map()
+          for (const d of ['dist/npm', 'dist/npm-vendor', 'dist/npm-landlock']) {
+            if (!fs.existsSync(d)) continue
+            for (const tgz of fs.readdirSync(d).filter(x => x.endsWith('.tgz'))) {
+              const abs = path.resolve(d, tgz)
+              // 注意：tarball 里读的是 JSON 字符串，直接用 JSON.parse，
+              // 不能走 readP（那是按文件路径读的）
+              const manifest = JSON.parse(execFileSync('tar', ['-xOzf', abs, 'package/package.json']).toString())
+              if (manifest && manifest.name) tarballOf.set(manifest.name, 'file:' + abs)
+            }
+          }
+          // —— 3) 只选闭包内的 tarball ——
+          const needed = new Map()
+          for (const name of closureNames) if (tarballOf.has(name)) needed.set(name, tarballOf.get(name))
+          console.log('闭包 tarball 数:', needed.size)
+          // —— 4) 写 consumer package.json ——
+          const consumer = 'dist/consumer'
+          fs.rmSync(consumer, { recursive: true, force: true })
+          fs.mkdirSync(consumer, { recursive: true })
+          fs.writeFileSync(path.join(consumer, 'package.json'), JSON.stringify({
+            name: 'dsh-server-2',
+            version: '0.0.0',
+            private: true,
+            type: 'module',
+            dependencies: Object.fromEntries(needed),
+          }, null, 2) + '\n')
+          const list = [...needed.entries()].map(([n, p]) => '  ' + n + ' <- ' + p).join('\n')
+          fs.writeFileSync(path.join(consumer, 'closure-manifest.txt'), list + '\n')
+          console.log('consumer 依赖:\n' + list)
+          NODE
+
+          # —— 5) npm flat install ——
+          #    与官方 verify-packed-install 一致 --omit=optional；
+          #    --ignore-scripts 避免发布包触发额外安装副作用
+          (
+            cd dist/consumer
+            npm install --no-audit --no-fund --package-lock=false --omit=optional --ignore-scripts
+          )
+          echo "=== 扁平 node_modules 顶层 @deepseek-ai 包数 ==="
+          ls dist/consumer/node_modules/@deepseek-ai 2>/dev/null | wc -l
+          ls dist/consumer/node_modules/dshmarket 2>/dev/null \
+            && echo "OK dshmarket 已随闭包装入" \
+            || echo "WARN dshmarket 未装入（检查 @deepseek-ai/dsh dependencies）"
+
+      - name: 校验扁平结构可启动 + 闭包完整
+        working-directory: server
+        run: |
+          set -euo pipefail
+          echo "=== dsh --version（从扁平 node_modules 触发）==="
+          timeout 15 node dist/consumer/node_modules/@deepseek-ai/dsh/lib/bin.js --version 2>&1 | head -3
+          echo ""
+          echo "=== 关键闭包 resolve 校验 ==="
+          node -e "
+            const { createRequire } = require('module')
+            const r = createRequire(process.cwd() + '/dist/consumer/package.json')
+            const must = [
+              'dshmarket/package.json',
+              '@deepseek-ai/dsh-base/package.json',
+              '@deepseek-ai/cordis/package.json',
+              '@deepseek-ai/dsh-web-frontend/dist/index.html',
+            ]
+            for (const m of must) { try { r.resolve(m); console.log('  OK', m) } catch (e) { console.error('  FAIL', m, e.code); process.exit(1) } }
+          "
+
+      - name: 压缩 server 目录（扁平 npm 结构 → fpk 供体）
+        run: |
+          set -euo pipefail
+          # 以 dist/consumer 这个 server2 形态扁平树为 fpk 载体（tar 根即安装根）：
+          #   安装后目录内含 package.json + node_modules/（含 dshmarket）
+          #   启动命令：cd <root> && node node_modules/@deepseek-ai/dsh/lib/bin.js web
+          cd server
+          tar -czf ../server.tar.gz -C dist/consumer .
+          cd ..
+          echo "=== server.tar.gz ==="
+          ls -lh server.tar.gz
+
 
       - name: 检出 buildbot 仓库（包含 fnpack 模板）
         uses: actions/checkout@v7
@@ -190,6 +322,7 @@ jobs:
           echo "打包完成，生成文件：$FINAL_NAME"
           ls -la *.fpk
 
+      # 测试运行时上传 fpk 到 Artifact，与 publish 解耦：取消 publish 也仍能在 Action UI 下载 fpk
       - name: 上传 fpk 文件作为 Artifact
         uses: actions/upload-artifact@v7
         with:
@@ -200,6 +333,7 @@ jobs:
   publish:
     name: 发布到 Fndepot Release
     needs: build
+    # publish 开关继承自生产 yaml；测试时在 UI 上取消勾选即仅构建 + 输出 fpk Artifact，不发布
     if: always() && needs.build.result == 'success' && github.event.inputs.publish == 'true'
     runs-on: ubuntu-24.04
     steps:
@@ -278,3 +412,4 @@ jobs:
           git add fnpack.json
           git commit -m "chore: update ${APP_NAME} to ${MANIFEST_VERSION} (${TAG})"
           git push
+
