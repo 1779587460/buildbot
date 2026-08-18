@@ -57,15 +57,34 @@ jobs:
           corepack enable
           corepack prepare pnpm@latest --activate
 
-      # ===== 以下为从 npm 构建并预置插件的独立步骤 =====
+      # ===== 第一步：下载并解压 @deepseek-ai/dsh（带重试和 registry） =====
       - name: 初始化 server 目录并下载 @deepseek-ai/dsh
         run: |
+          set -euo pipefail
           mkdir -p server
           cd server
           echo '{}' > package.json
           pnpm init -y > /dev/null 2>&1
-          npm pack @deepseek-ai/dsh
-          DSH_TGZ=$(ls -t deepseek-ai-dsh-*.tgz | head -1)
+
+          # 尝试下载包，最多重试2次
+          for i in {1..2}; do
+            echo "尝试下载 @deepseek-ai/dsh (第 $i 次)..."
+            if npm pack @deepseek-ai/dsh --registry=https://registry.npmjs.org; then
+              break
+            fi
+            if [ $i -eq 2 ]; then
+              echo "错误：两次尝试 npm pack 均失败"
+              exit 1
+            fi
+            echo "下载失败，等待5秒后重试..."
+            sleep 5
+          done
+
+          DSH_TGZ=$(ls -t deepseek-ai-dsh-*.tgz 2>/dev/null | head -1)
+          if [ -z "$DSH_TGZ" ]; then
+            echo "错误：未生成 .tgz 文件"
+            exit 1
+          fi
           echo "下载的包：$DSH_TGZ"
           mkdir -p dsh-pkg
           tar -xf "$DSH_TGZ" -C dsh-pkg
@@ -158,7 +177,7 @@ jobs:
           }
           NODE
 
-      # ===== 回到原有步骤 =====
+      # ===== 以下为原有步骤（不变） =====
       - name: 安装构建依赖
         run: |
           sudo apt-get update
