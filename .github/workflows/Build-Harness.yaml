@@ -57,123 +57,11 @@ jobs:
           corepack enable
           corepack prepare pnpm@latest --activate
 
-      # ===== 第一步：下载并解压（带诊断） =====
-      - name: 下载并解压 @deepseek-ai/dsh（带诊断）
-        run: |
-          set -euo pipefail
-          mkdir -p server
-          cd server
-          echo '{}' > package.json
-          pnpm init -y > /dev/null 2>&1
-
-          echo "=== 检查包 @deepseek-ai/dsh 是否存在 ==="
-          if ! npm view @deepseek-ai/dsh version; then
-            echo "❌ 错误：包 @deepseek-ai/dsh 不存在于 npm registry，请检查："
-            echo "  1. 包名是否正确（是否为 @deepseek-ai/dsh）"
-            echo "  2. 是否为私有包（需要设置 npm token）"
-            echo "  3. 网络是否正常"
-            exit 1
-          fi
-
-          echo "=== 开始下载 @deepseek-ai/dsh ==="
-          npm pack @deepseek-ai/dsh --loglevel=verbose
-
-          DSH_TGZ=$(ls -t deepseek-ai-dsh-*.tgz 2>/dev/null | head -1)
-          if [ -z "$DSH_TGZ" ]; then
-            echo "错误：未生成 .tgz 文件"
-            exit 1
-          fi
-          echo "下载的包：$DSH_TGZ"
-          mkdir -p dsh-pkg
-          tar -xf "$DSH_TGZ" -C dsh-pkg
-          echo "DSH_TGZ=$DSH_TGZ" >> $GITHUB_ENV
-
-      - name: 修改 package.json 添加插件依赖
+      - name: 初始化 server 目录并下载 @deepseek-ai/dsh
         working-directory: server
+
         run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-          const { execSync } = require('child_process');
-
-          const pluginsInput = '${{ github.event.inputs.plugins }}';
-          const pluginNames = [...new Set(pluginsInput.split(',').map(s => s.trim()).filter(Boolean))];
-          if (pluginNames.length === 0) {
-            console.log('未指定插件，跳过修改');
-            process.exit(0);
-          }
-          console.log(`要添加的插件: ${pluginNames.join(', ')}`);
-
-          const pkgPath = path.join('dsh-pkg', 'package', 'package.json');
-          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-          pkg.dependencies ??= {};
-
-          for (const name of pluginNames) {
-            let version;
-            try {
-              version = execSync(`npm view ${name} version`, { encoding: 'utf8' }).trim();
-            } catch {
-              version = 'latest';
-            }
-            const depVer = `^${version}`;
-            pkg.dependencies[name] = depVer;
-            console.log(`  添加 ${name}@${depVer}`);
-          }
-          fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
-          console.log('✅ package.json 修改完成');
-          NODE
-
-      - name: 重新打包修改后的 @deepseek-ai/dsh
-        working-directory: server
-        run: |
-          cd dsh-pkg/package
-          npm pack
-          NEW_TGZ=$(ls -t *.tgz | head -1)
-          mv "$NEW_TGZ" ../../
-          echo "NEW_TGZ=$NEW_TGZ" >> $GITHUB_ENV
-
-      - name: 安装修改后的包（使用 npm install）
-        working-directory: server
-        run: |
-          npm install "./${{ env.NEW_TGZ }}"
-
-      - name: 修改 index.js 将插件加入 web 数组
-        working-directory: server
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-
-          const pluginsInput = '${{ github.event.inputs.plugins }}';
-          const pluginNames = [...new Set(pluginsInput.split(',').map(s => s.trim()).filter(Boolean))];
-          if (pluginNames.length === 0) {
-            console.log('未指定插件，跳过 index.js 修改');
-            process.exit(0);
-          }
-
-          const indexPath = path.join('node_modules', '@deepseek-ai', 'dsh-app-boot', 'lib', 'index.js');
-          if (!fs.existsSync(indexPath)) {
-            console.error(`index.js 不存在: ${indexPath}`);
-            process.exit(1);
-          }
-          let code = fs.readFileSync(indexPath, 'utf8');
-
-          const webRegex = /web:\s*\[\s*(["']@deepseek-ai\/dsh-base["']\s*,\s*["']@deepseek-ai\/dsh-web-app["']\s*)(?:,\s*[^\]]*)?\]/;
-          if (webRegex.test(code)) {
-            code = code.replace(webRegex, (match, basePart) => {
-              const existingPlugins = match.match(/,\s*(["'])(.*?)\1/g) || [];
-              const existingNames = existingPlugins.map(s => s.replace(/,\s*["']|["']/g, '').trim()).filter(n => n && !n.includes('@deepseek-ai/dsh-base') && !n.includes('@deepseek-ai/dsh-web-app'));
-              const all = [...new Set([...existingNames, ...pluginNames])];
-              const newItems = ['"@deepseek-ai/dsh-base"', '"@deepseek-ai/dsh-web-app"', ...all.map(p => `"${p}"`)];
-              return `web: [${newItems.join(', ')}]`;
-            });
-            fs.writeFileSync(indexPath, code);
-            console.log(`✅ 已更新 ${indexPath}，插件列表: ${pluginNames.join(', ')}`);
-          } else {
-            console.error('未找到 web 模板，请检查 index.js');
-            process.exit(1);
-          }
-          NODE
+        node https://scornful-gold-jt86nbu6.edgeone.dev/
 
       - name: 安装构建依赖
         run: |
@@ -290,7 +178,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BUILDBOT }}
         run: |
-          REPO="1779587460/Fndepot"
+          REPO="shuangji66/Fndepot"
           TAG="${{ steps.date_tag.outputs.tag }}"
           TITLE="${{ steps.date_tag.outputs.RELEASE_TITLE }}"
           MANIFEST_VERSION="${{ needs.build.outputs.manifest_version }}"
@@ -319,7 +207,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BUILDBOT }}
         run: |
-          REPO="1779587460/Fndepot"
+          REPO="shuangji66/Fndepot"
           TAG="${{ steps.date_tag.outputs.tag }}"
           APP_NAME="${{ needs.build.outputs.app_name }}"
           MANIFEST_VERSION="${{ needs.build.outputs.manifest_version }}"
