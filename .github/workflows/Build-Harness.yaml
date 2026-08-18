@@ -110,11 +110,11 @@ jobs:
           rm -rf docs examples website assets scripts python .agents .claude
 
           # ─ 波次 3：每个 workspace member 仅留 lib/dist/package.json/*.d.ts ─
-          find packages apps -type d \( -name src -o -name tests -o -name __tests__ \) -prune -exec rm -rf {} +
-          find packages apps -type f \( -name "*.ts" ! -name "*.d.ts" \) -delete
-          find packages apps -maxdepth 4 -name "tsconfig.json" -delete
-          find packages apps -name "tsconfig.tsbuildinfo" -delete
-          find packages apps -maxdepth 4 -name "tsdown.config.ts" -delete
+          # find packages apps -type d \( -name src -o -name tests -o -name __tests__ \) -prune -exec rm -rf {} +
+          # find packages apps -type f \( -name "*.ts" ! -name "*.d.ts" \) -delete
+          # find packages apps -maxdepth 4 -name "tsconfig.json" -delete
+          # find packages apps -name "tsconfig.tsbuildinfo" -delete
+          # find packages apps -maxdepth 4 -name "tsdown.config.ts" -delete
 
           # ─ 波次 4：删除不被运行时闭包引用的 dev-only workspace member ─
           # 动态计算（不写死列表，避免上游源码升级漏一个 member 而导致 pnpm install
