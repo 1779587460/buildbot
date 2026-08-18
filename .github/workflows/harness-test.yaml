@@ -16,7 +16,10 @@ jobs:
       - name: Install in server directory
         run: |
           mkdir -p server
-          npx --prefix server -y @deepseek-ai/dsh web
+          npx --prefix server -y @deepseek-ai/dsh web &
+          SERVER_PID=$!
+          sleep 5
+          kill $SERVER_PID || true
 
       - name: Compress server directory
         run: tar -czf server.tar.gz server
