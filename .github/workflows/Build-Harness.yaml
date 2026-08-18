@@ -129,52 +129,67 @@ jobs:
           node -e "const { createRequire } = require('module'); const r = createRequire(process.cwd() + '/apps/cli/package.json'); const p = r.resolve('dshmarket/package.json'); console.log('OK dshmarket 从安装锚点可解析:', p)"
           node -e "const fs=require('fs'); const s=fs.readFileSync('packages/boot/app-boot/src/profile.ts','utf8'); if(!s.includes(\"dshmarket\")) { console.error('web 模板未包含 dshmarket'); process.exit(1) } console.log('OK web profile 模板已预置 dshmarket')"
 
-      - name: 清理源码（仅清 git 与仓库元数据；保留源码供官方 release:pack 使用）
+      - name: 清理源码
         working-directory: server
         run: rm -rf .github .git *.md
 
-      - name: 官方 release:pack —— 打全部 npm tarball（dsh + vendor + landlock）
+      - name: 裁剪发布物中生产环境用不到的构建残留
         working-directory: server
         run: |
           set -euo pipefail
-          # GitHub Actions 自动设 CI=true，规避 pnpm 的
-          # ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY；显式设双保险。
-          export CI=true
-          # dsh family：packages/*/* + apps/* 全部统一版本
-          pnpm run release:pack --family dsh --out dist/npm
-          # vendor family：dsh 包把 vendored framework 声明为 peer，
-          # npm flat install 需要它同目录交付
-          pnpm run release:pack --family vendor --out dist/npm-vendor
-          # landlock entry（dsh-sandbox-local 运行时依赖的 native binding 来源）
-          pnpm --dir native/landlock-run run build:ts
-          pnpm --dir native/landlock-run/packages/entry pack --pack-destination dist/npm-landlock
-          echo "=== pack 产出统计 ==="
-          echo "dsh tarball:    $(ls dist/npm/*.tgz 2>/dev/null | wc -l)"
-          echo "vendor tarball: $(ls dist/npm-vendor/*.tgz 2>/dev/null | wc -l)"
-          echo "landlock tarball: $(ls dist/npm-landlock/*.tgz 2>/dev/null | wc -l)"
 
-      - name: 组装 server2 扁平 node_modules（按 dsh 闭包挑 tarball，npm install）
-        working-directory: server
-        run: |
-          set -euo pipefail
-          node <<'NODE'
-          const fs = require('fs')
-          const path = require('path')
-          const { execFileSync } = require('child_process')
+          # ─ 波次 1：顶层开发期配置文件 ─
+          rm -f \
+            .gitlab-ci.yml .jscpd.json .oxlintrc.json .oxlintrc.staged.json \
+            .rgignore .editorconfig lefthook.yml pytest.ini \
+            knip.json CONTRIBUTING.i18n.yaml README.i18n.yaml \
+            tsconfig.client.tsbuildinfo tsconfig.host.tsbuildinfo \
+            vitest.config.ts vitest.e2e.config.ts vitest.snapshot.config.ts \
+            vitest.web.config.ts vitest.web.perf.config.ts vitest.web-stress.config.ts \
+            vitest.shared.ts
+
+          # ─ 波次 2：顶层非运行时目录（保留 vendor/ 与 native/） ─
+          rm -rf docs examples website assets scripts python .agents .claude
+
+          # ─ 波次 3：每个 workspace member 仅留 lib/dist/package.json/*.d.ts ─
+          find packages apps -type d \( -name src -o -name tests -o -name __tests__ \) -prune -exec rm -rf {} +
+          find packages apps -type f \( -name "*.ts" ! -name "*.d.ts" \) -delete
+          find packages apps -maxdepth 4 -name "tsconfig.json" -delete
+          find packages apps -name "tsconfig.tsbuildinfo" -delete
+          find packages apps -maxdepth 4 -name "tsdown.config.ts" -delete
+
+          # ─ 波次 4：删除不被运行时闭包引用的 dev-only workspace member ─
+          # 动态计算（不写死列表，避免上游源码升级漏一个 member 而导致 pnpm install
+          # 解析时 hard-fail "找不到 workspace 包"）。逻辑：
+          #   1) 枚举 packages/apps/vendor/native 下所有 member（name -> dir）
+          #   2) 从 @deepseek-ai/dsh (= apps/cli) 出发，按 dependencies /
+          #      optionalDependencies / peerDependencies 递归标记 used
+          #   3) 剩下的 unused 全部 rm -rf
+          # 不能删的两类：
+          #   - landlock 系列（native/landlock-run 与 native/landlock-run/packages/*）：
+          #     其 package.json name 是 ...-workspace / 名字带 -linux-x64 等，
+          #     探测的 name 映射机制不识别，且它本身是 prod 必需的 native binding
+          #   - fixture 子包：路径含 /fixtures/ 或 /tests/，不算真 member
+          node - <<'NODE'
+          const fs = require('fs'), path = require('path')
           function readP(p) { try { return JSON.parse(fs.readFileSync(p, 'utf8')) } catch { return null } }
-          // —— 1) 计算 dsh 运行时闭包 member（含 vendor 的 peer）——
-          const allMembers = new Map() // name -> dir
+          const allMembers = new Map()
           function collect(dir) {
             if (!fs.existsSync(dir)) return
             for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-              if (!e.isDirectory() || e.name === 'node_modules' || e.name === '.git') continue
+              if (!e.isDirectory() || e.name === 'node_modules' || e.name === '.git' ||
+                  e.name === 'fixtures' || e.name === 'tests') continue
               const sub = path.join(dir, e.name)
               const pj = path.join(sub, 'package.json')
-              if (fs.existsSync(pj)) { const p = readP(pj); if (p && p.name) allMembers.set(p.name, sub) }
+              if (fs.existsSync(pj)) {
+                const p = readP(pj)
+                if (p && p.name) allMembers.set(p.name, sub)
+              }
               collect(sub)
             }
           }
           for (const r of ['packages', 'apps', 'vendor', 'native']) collect(r)
+
           const used = new Set()
           function visit(name) {
             if (used.has(name)) return
@@ -189,85 +204,67 @@ jobs:
             }
           }
           visit('@deepseek-ai/dsh')
-          const closureNames = new Set([...used].filter(n => allMembers.has(n)))
-          console.log('dsh 闭包 member 数:', closureNames.size)
-          // —— 2) 收集 pack 产物里所有 tarball -> {name,url} ——
-          const tarballOf = new Map()
-          for (const d of ['dist/npm', 'dist/npm-vendor', 'dist/npm-landlock']) {
-            if (!fs.existsSync(d)) continue
-            for (const tgz of fs.readdirSync(d).filter(x => x.endsWith('.tgz'))) {
-              const abs = path.resolve(d, tgz)
-              // 注意：tarball 里读的是 JSON 字符串，直接用 JSON.parse，
-              // 不能走 readP（那是按文件路径读的）
-              const manifest = JSON.parse(execFileSync('tar', ['-xOzf', abs, 'package/package.json']).toString())
-              if (manifest && manifest.name) tarballOf.set(manifest.name, 'file:' + abs)
-            }
+
+          let removed = 0
+          for (const [name, dir] of allMembers) {
+            if (used.has(name)) continue
+            if (dir.includes('/fixtures/') || dir.includes('/tests/')) continue
+            if (name.includes('landlock-run-workspace') || dir.startsWith('native/landlock-run/packages/')) continue
+            fs.rmSync(dir, { recursive: true, force: true })
+            removed++
+            console.log('rm unused member:', dir, '[' + name + ']')
           }
-          // —— 3) 只选闭包内的 tarball ——
-          const needed = new Map()
-          for (const name of closureNames) if (tarballOf.has(name)) needed.set(name, tarballOf.get(name))
-          console.log('闭包 tarball 数:', needed.size)
-          // —— 4) 写 consumer package.json ——
-          const consumer = 'dist/consumer'
-          fs.rmSync(consumer, { recursive: true, force: true })
-          fs.mkdirSync(consumer, { recursive: true })
-          fs.writeFileSync(path.join(consumer, 'package.json'), JSON.stringify({
-            name: 'dsh-server-2',
-            version: '0.0.0',
-            private: true,
-            type: 'module',
-            dependencies: Object.fromEntries(needed),
-          }, null, 2) + '\n')
-          const list = [...needed.entries()].map(([n, p]) => '  ' + n + ' <- ' + p).join('\n')
-          fs.writeFileSync(path.join(consumer, 'closure-manifest.txt'), list + '\n')
-          console.log('consumer 依赖:\n' + list)
+          console.log('wave4: removed ' + removed + ' unused workspace members')
           NODE
 
-          # —— 5) npm flat install ——
-          #    与官方 verify-packed-install 一致 --omit=optional；
-          #    --ignore-scripts 避免发布包触发额外安装副作用
-          (
-            cd dist/consumer
-            npm install --no-audit --no-fund --package-lock=false --omit=optional --ignore-scripts
-          )
-          echo "=== 扁平 node_modules 顶层 @deepseek-ai 包数 ==="
-          ls dist/consumer/node_modules/@deepseek-ai 2>/dev/null | wc -l
-          ls dist/consumer/node_modules/dshmarket 2>/dev/null \
-            && echo "OK dshmarket 已随闭包装入" \
-            || echo "WARN dshmarket 未装入（检查 @deepseek-ai/dsh dependencies）"
 
-      - name: 校验扁平结构可启动 + 闭包完整
-        working-directory: server
-        run: |
-          set -euo pipefail
-          echo "=== dsh --version（从扁平 node_modules 触发）==="
-          timeout 15 node dist/consumer/node_modules/@deepseek-ai/dsh/lib/bin.js --version 2>&1 | head -3
-          echo ""
-          echo "=== 关键闭包 resolve 校验 ==="
-          node -e "
-            const { createRequire } = require('module')
-            const r = createRequire(process.cwd() + '/dist/consumer/package.json')
-            const must = [
-              'dshmarket/package.json',
-              '@deepseek-ai/dsh-base/package.json',
-              '@deepseek-ai/cordis/package.json',
-              '@deepseek-ai/dsh-web-frontend/dist/index.html',
-            ]
-            for (const m of must) { try { r.resolve(m); console.log('  OK', m) } catch (e) { console.error('  FAIL', m, e.code); process.exit(1) } }
-          "
+          # ─ 波次 5：清根/各 member 的 scripts 与 devDependencies ─
+          node - <<'NODE'
+          const fs = require('fs'), path = require('path')
+          {
+            const p = './package.json'
+            const pkg = JSON.parse(fs.readFileSync(p, 'utf8'))
+            pkg.scripts = {}
+            delete pkg.devDependencies
+            fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n')
+            console.log('根 package.json: 清空 scripts + 删除 devDependencies')
+          }
+          function stripMember(dir) {
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+              if (!e.isDirectory() || e.name === 'node_modules' || e.name === '.git') continue
+              const sub = path.join(dir, e.name)
+              const pj = path.join(sub, 'package.json')
+              if (fs.existsSync(pj)) {
+                const pkg = JSON.parse(fs.readFileSync(pj, 'utf8'))
+                let touched = false
+                if (pkg.scripts && Object.keys(pkg.scripts).length) { pkg.scripts = {}; touched = true }
+                if (pkg.devDependencies) { delete pkg.devDependencies; touched = true }
+                if (touched) fs.writeFileSync(pj, JSON.stringify(pkg, null, 2) + '\n')
+              }
+              stripMember(sub)
+            }
+          }
+          for (const root of ['packages', 'apps', 'vendor']) {
+            if (fs.existsSync(root)) stripMember(root)
+          }
+          NODE
 
-      - name: 压缩 server 目录（扁平 npm 结构 → fpk 供体）
+          # ─ 波次 6：从干净状态重装 prod-only 闭包 ─
+          # 不能用 pnpm prune --prod：本机实测发现带 lefthook postinstall 时它会在
+          # 无 TTY 环境抛 ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY 并整体清空 store（1.5G→100K）。
+          # 改为删 node_modules + 重新 install --prod 最干净。
+          rm -rf node_modules
+          CI=true pnpm install --prod \
+            --no-frozen-lockfile \
+            --config.confirmModulesPurge=false \
+            --config.dangerouslyAllowAllBuilds=true \
+            --config.minimumReleaseAge=0 \
+            --config.strictDepBuilds=false
+
+      - name: 压缩 server 目录
         run: |
-          set -euo pipefail
-          # 以 dist/consumer 这个 server2 形态扁平树为 fpk 载体（tar 根即安装根）：
-          #   安装后目录内含 package.json + node_modules/（含 dshmarket）
-          #   启动命令：cd <root> && node node_modules/@deepseek-ai/dsh/lib/bin.js web
-          cd server
-          tar -czf ../server.tar.gz -C dist/consumer .
-          cd ..
-          echo "=== server.tar.gz ==="
+          tar -czf server.tar.gz server
           ls -lh server.tar.gz
-
 
       - name: 检出 buildbot 仓库（包含 fnpack 模板）
         uses: actions/checkout@v7
@@ -412,4 +409,3 @@ jobs:
           git add fnpack.json
           git commit -m "chore: update ${APP_NAME} to ${MANIFEST_VERSION} (${TAG})"
           git push
-
