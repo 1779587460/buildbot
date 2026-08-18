@@ -182,44 +182,65 @@ jobs:
           find packages apps -name "tsconfig.tsbuildinfo" -delete
           find packages apps -maxdepth 4 -name "tsdown.config.ts" -delete
 
-          # ─ 波次 4：删 32 个不被运行时闭包引用的 dev-only workspace member ─
-          UNUSED_MEMBERS=(
-            vendor/logger-console
-            packages/acp/acp
-            packages/examples/acp-demo
-            packages/examples/agent-spine-demo
-            packages/examples/jsonrpc-demo
-            packages/test-support/acp-snapshot
-            packages/test-support/agent-loop-testkit
-            packages/test-support/client-runtime
-            packages/test-support/llm-mock-server
-            packages/test-support/llm-replay
-            packages/test-support/loader-smoke
-            packages/e2b/e2b
-            packages/e2b/fs-e2b
-            packages/e2b/subprocess-e2b
-            packages/hooks/hook-protocol
-            packages/hooks/hooks-claude-code
-            packages/hooks/hooks-codex
-            packages/lsp/lsp
-            packages/lsp/lsp-stdio
-            packages/lsp/tool-lsp
-            packages/sdk/client
-            packages/sdk/protocol
-            packages/sdk/server
-            packages/session/session-persistence-sqlite
-            packages/session/session-title-all-prompts-llm
-            packages/storage/storage-sqlite
-            packages/subagent/subagent-acp
-            packages/terminal/tool-terminal
-            packages/session-query/tool-session-query
-            packages/web/web-fetch-http
-            packages/web/web-search-exa
-            packages/web/web-search-perplexity
-          )
-          for d in "${UNUSED_MEMBERS[@]}"; do
-            [ -d "$d" ] && rm -rf "$d" || echo "skip (already gone): $d"
-          done
+          # ─ 波次 4：删除不被运行时闭包引用的 dev-only workspace member ─
+          # 动态计算（不写死列表，避免上游源码升级漏一个 member 而导致 pnpm install
+          # 解析时 hard-fail "找不到 workspace 包"）。逻辑：
+          #   1) 枚举 packages/apps/vendor/native 下所有 member（name -> dir）
+          #   2) 从 @deepseek-ai/dsh (= apps/cli) 出发，按 dependencies /
+          #      optionalDependencies / peerDependencies 递归标记 used
+          #   3) 剩下的 unused 全部 rm -rf
+          # 不能删的两类：
+          #   - landlock 系列（native/landlock-run 与 native/landlock-run/packages/*）：
+          #     其 package.json name 是 ...-workspace / 名字带 -linux-x64 等，
+          #     探测的 name 映射机制不识别，且它本身是 prod 必需的 native binding
+          #   - fixture 子包：路径含 /fixtures/ 或 /tests/，不算真 member
+          node - <<'NODE'
+          const fs = require('fs'), path = require('path')
+          function readP(p) { try { return JSON.parse(fs.readFileSync(p, 'utf8')) } catch { return null } }
+          const allMembers = new Map()
+          function collect(dir) {
+            if (!fs.existsSync(dir)) return
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+              if (!e.isDirectory() || e.name === 'node_modules' || e.name === '.git' ||
+                  e.name === 'fixtures' || e.name === 'tests') continue
+              const sub = path.join(dir, e.name)
+              const pj = path.join(sub, 'package.json')
+              if (fs.existsSync(pj)) {
+                const p = readP(pj)
+                if (p && p.name) allMembers.set(p.name, sub)
+              }
+              collect(sub)
+            }
+          }
+          for (const r of ['packages', 'apps', 'vendor', 'native']) collect(r)
+
+          const used = new Set()
+          function visit(name) {
+            if (used.has(name)) return
+            used.add(name)
+            const dir = allMembers.get(name)
+            if (!dir) return
+            const p = readP(path.join(dir, 'package.json'))
+            if (!p) return
+            for (const k of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
+              if (!p[k]) continue
+              for (const dep in p[k]) if (allMembers.has(dep)) visit(dep)
+            }
+          }
+          visit('@deepseek-ai/dsh')
+
+          let removed = 0
+          for (const [name, dir] of allMembers) {
+            if (used.has(name)) continue
+            if (dir.includes('/fixtures/') || dir.includes('/tests/')) continue
+            if (name.includes('landlock-run-workspace') || dir.startsWith('native/landlock-run/packages/')) continue
+            fs.rmSync(dir, { recursive: true, force: true })
+            removed++
+            console.log('rm unused member:', dir, '[' + name + ']')
+          }
+          console.log('wave4: removed ' + removed + ' unused workspace members')
+          NODE
+
 
           # ─ 波次 5：清根/各 member 的 scripts 与 devDependencies ─
           node - <<'NODE'
